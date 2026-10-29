@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupContactForm();
     setupStandingsView();
     setupNetworkListeners();
+    setupRealtimeSync();
     
     // Load and render initial data
     loadPredictions();
@@ -317,8 +318,67 @@ document.addEventListener('DOMContentLoaded', () => {
     window._TOMORROW_CACHE = tomorrowData;
     window._LIVE_CACHE = liveData;
 
+    updateHeroBankerCard(todayData);
+    updateLastSyncTimestamp();
+
     filterAndRenderMatches();
     renderLiveMatches(liveData);
+  }
+
+  function updateHeroBankerCard(matches) {
+    if (!matches || matches.length === 0) return;
+    const banker = matches.find(m => m.isBanker) || matches[0];
+    if (!banker) return;
+
+    const timeEl = document.getElementById('hero-banker-time');
+    const homeLogo = document.getElementById('hero-home-logo');
+    const homeName = document.getElementById('hero-home-name');
+    const awayLogo = document.getElementById('hero-away-logo');
+    const awayName = document.getElementById('hero-away-name');
+    const tipEl = document.getElementById('hero-banker-tip');
+    const probEl = document.getElementById('hero-banker-prob');
+    const scoreEl = document.getElementById('hero-banker-score');
+
+    if (timeEl) timeEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Today ${banker.time}`;
+    if (homeLogo) homeLogo.src = banker.homeTeam.logo;
+    if (homeName) homeName.textContent = banker.homeTeam.name;
+    if (awayLogo) awayLogo.src = banker.awayTeam.logo;
+    if (awayName) awayName.textContent = banker.awayTeam.name;
+    if (tipEl) tipEl.textContent = `${banker.prediction.primary}`;
+    if (probEl) probEl.textContent = `${banker.prediction.probability} Probability`;
+    if (scoreEl) scoreEl.textContent = `Score: ${banker.prediction.correctScore}`;
+  }
+
+  function setupRealtimeSync() {
+    const syncBtn = document.getElementById('manual-sync-btn');
+    const spinner = document.getElementById('sync-spinner-icon');
+    if (!syncBtn) return;
+
+    syncBtn.addEventListener('click', async () => {
+      if (spinner) spinner.classList.add('inline-block', 'animate-spin');
+      syncBtn.disabled = true;
+      try {
+        if (window.FootballDataService && window.FootballDataService.fetchRealtimeMatches) {
+          if (window.FootballDataService.cache) window.FootballDataService.cache.lastSync = 0;
+          await loadPredictions();
+        }
+      } catch (err) {
+        console.error('Manual sync error:', err);
+      } finally {
+        setTimeout(() => {
+          if (spinner) spinner.classList.remove('animate-spin');
+          syncBtn.disabled = false;
+        }, 600);
+      }
+    });
+  }
+
+  function updateLastSyncTimestamp() {
+    const syncSpan = document.getElementById('last-sync-time');
+    if (syncSpan) {
+      const now = new Date();
+      syncSpan.textContent = `Synced: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
   }
 
   function filterAndRenderMatches() {
@@ -853,7 +913,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateSpan = document.getElementById('current-date-display');
     if (dateSpan) {
       const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
-      dateSpan.textContent = new Date().toLocaleDateString('en-US', options);
+      dateSpan.textContent = `${new Date().toLocaleDateString('en-US', options)} • 2026 Real-Time Feed`;
     }
   }
 });

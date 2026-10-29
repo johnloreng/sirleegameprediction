@@ -21,102 +21,102 @@ const LEAGUES = [
 const TODAY_MATCHES = [
   {
     id: 'm1',
-    leagueId: 'epl',
-    leagueName: 'English Premier League',
-    country: 'England',
-    flag: '🇬🇧',
-    round: 'Gameweek 10',
+    leagueId: 'seriea',
+    leagueName: 'Italian Serie A',
+    country: 'Italy',
+    flag: '🇮🇹',
+    round: 'Round 10 • Super Banker',
     status: 'SCHEDULED',
-    time: '20:00',
+    time: '19:45',
     isBanker: true,
     badgeText: '👑 BANKER OF THE DAY',
     badgeType: 'gold',
     homeTeam: {
-      name: 'Arsenal',
-      shortName: 'ARS',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/9825.png',
-      rank: 2,
+      name: 'Fiorentina',
+      shortName: 'FIO',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/109.png',
+      rank: 4,
       form: ['W', 'W', 'W', 'D', 'W'],
-      xG: 2.34
+      xG: 2.38
     },
     awayTeam: {
-      name: 'Manchester City',
-      shortName: 'MCI',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8456.png',
-      rank: 1,
+      name: 'Atalanta',
+      shortName: 'ATA',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/105.png',
+      rank: 5,
       form: ['W', 'D', 'W', 'W', 'L'],
-      xG: 2.18
+      xG: 2.12
     },
     prediction: {
-      primary: 'Home Win or Draw (1X)',
-      probability: '82%',
+      primary: 'Home Win or Draw (1X) & Over 1.5',
+      probability: '85%',
       primaryType: '1X',
       correctScore: '2 - 1',
       averageGoals: 'Over 2.5 Goals',
-      averageGoalsOdds: '1.82',
-      btts: 'Yes',
-      fullGameScore: 'Arsenal 2 - 1 Man City',
+      averageGoalsOdds: '1.80',
+      btts: 'Yes (84%)',
+      fullGameScore: 'Fiorentina 2 - 1 Atalanta',
       confidenceRating: 5,
       confidenceText: 'Ultra High (92%)',
-      reasoning: 'Arsenal remain unbeaten at Emirates Stadium across their last 14 fixtures, averaging 2.45 goals. Manchester City have shown defensive vulnerability in transitions, conceding in 4 consecutive away outings.'
+      reasoning: 'Fiorentina enter this clash with exceptional attacking fluidity at Artemio Franchi, scoring 11 goals across their previous 4 home games. Atalanta maintain offensive threat with Gasperini verticality but have conceded in 5 consecutive away trips.'
     },
     stats: {
-      h2h: { homeWins: 4, draws: 3, awayWins: 5, lastResult: 'Man City 2-2 Arsenal' },
-      homeAvgGoalsScored: 2.4,
-      homeAvgGoalsConceded: 0.7,
-      awayAvgGoalsScored: 2.1,
-      awayAvgGoalsConceded: 1.2,
-      referee: 'Michael Oliver (Avg 3.6 cards/game)'
+      h2h: { homeWins: 6, draws: 3, awayWins: 4, lastResult: 'Fiorentina 3-2 Atalanta' },
+      homeAvgGoalsScored: 2.3,
+      homeAvgGoalsConceded: 0.9,
+      awayAvgGoalsScored: 2.0,
+      awayAvgGoalsConceded: 1.4,
+      referee: 'Michael Fabbri (Avg 3.8 cards/game)'
     }
   },
   {
     id: 'm2',
-    leagueId: 'ucl',
-    leagueName: 'UEFA Champions League',
-    country: 'Europe',
-    flag: '🇪🇺',
-    round: 'League Phase - Matchday 4',
+    leagueId: 'seriea',
+    leagueName: 'Italian Serie A',
+    country: 'Italy',
+    flag: '🇮🇹',
+    round: 'Round 10',
     status: 'SCHEDULED',
-    time: '21:00',
+    time: '17:30',
     isBanker: true,
     badgeText: '🔥 HIGH CONFIDENCE',
     badgeType: 'neon',
     homeTeam: {
-      name: 'Real Madrid',
-      shortName: 'RMA',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8633.png',
-      rank: 3,
-      form: ['W', 'W', 'L', 'W', 'W'],
-      xG: 2.65
+      name: 'Frosinone',
+      shortName: 'FRO',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/4057.png',
+      rank: 12,
+      form: ['W', 'D', 'L', 'W', 'W'],
+      xG: 1.85
     },
     awayTeam: {
-      name: 'AC Milan',
-      shortName: 'ACM',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8564.png',
-      rank: 6,
-      form: ['L', 'W', 'D', 'W', 'L'],
-      xG: 1.35
+      name: 'Lecce',
+      shortName: 'LEC',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/113.png',
+      rank: 16,
+      form: ['L', 'L', 'D', 'L', 'L'],
+      xG: 0.92
     },
     prediction: {
       primary: 'Home Win (1)',
-      probability: '79%',
+      probability: '81%',
       primaryType: '1',
-      correctScore: '3 - 1',
-      averageGoals: 'Over 2.5 & BTTS',
-      averageGoalsOdds: '1.95',
-      btts: 'Yes',
-      fullGameScore: 'Real Madrid 3 - 1 AC Milan',
+      correctScore: '2 - 0',
+      averageGoals: 'Under 2.5 Goals',
+      averageGoalsOdds: '1.75',
+      btts: 'No (76%)',
+      fullGameScore: 'Frosinone 2 - 0 Lecce',
       confidenceRating: 5,
       confidenceText: 'Very High (88%)',
-      reasoning: 'Real Madrid at the Santiago Bernabéu in Champions League nights produce dominant attacking metrics. Milan have struggled with pace against inverted wingers in European competition.'
+      reasoning: 'Lecce have struggled on the road with an alarming lack of scoring efficiency, failing to register a single goal in 4 consecutive away outings. Frosinone have capitalized heavily on home set-pieces.'
     },
     stats: {
-      h2h: { homeWins: 6, draws: 2, awayWins: 3, lastResult: 'Real Madrid 3-2 AC Milan' },
-      homeAvgGoalsScored: 2.8,
-      homeAvgGoalsConceded: 0.9,
-      awayAvgGoalsScored: 1.4,
-      awayAvgGoalsConceded: 1.5,
-      referee: 'Slavko Vinčić'
+      h2h: { homeWins: 5, draws: 2, awayWins: 2, lastResult: 'Frosinone 1-1 Lecce' },
+      homeAvgGoalsScored: 1.7,
+      homeAvgGoalsConceded: 1.1,
+      awayAvgGoalsScored: 0.6,
+      awayAvgGoalsConceded: 1.8,
+      referee: 'Daniele Chiffi'
     }
   },
   {
@@ -725,20 +725,370 @@ const TODAY_MATCHES = [
 const TOMORROW_MATCHES = [
   {
     id: 't1',
+    leagueId: 'ligue1',
+    leagueName: 'French Ligue 1',
+    country: 'France',
+    flag: '🇫🇷',
+    round: 'Matchday 10 • Super Banker',
+    status: 'UPCOMING',
+    time: '18:00',
+    isBanker: true,
+    badgeText: '👑 TOMORROW BANKER',
+    badgeType: 'gold',
+    homeTeam: {
+      name: 'Le Havre AC',
+      shortName: 'HAC',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/274.png',
+      rank: 16,
+      form: ['L', 'L', 'L', 'W', 'L'],
+      xG: 0.88
+    },
+    awayTeam: {
+      name: 'Paris Saint-Germain',
+      shortName: 'PSG',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/160.png',
+      rank: 1,
+      form: ['W', 'W', 'W', 'W', 'W'],
+      xG: 2.85
+    },
+    prediction: {
+      primary: 'Away Win (2) & Over 1.5 Goals',
+      probability: '91%',
+      primaryType: '2',
+      correctScore: '0 - 3',
+      averageGoals: 'Over 2.5 Goals',
+      averageGoalsOdds: '1.52',
+      btts: 'No (78%)',
+      fullGameScore: 'Le Havre 0 - 3 PSG',
+      confidenceRating: 5,
+      confidenceText: 'Banker (94%)',
+      reasoning: 'PSG remain on an unstoppable Ligue 1 title march with 29 points and +24 goal difference. Le Havre have lost 6 of their last 7 games and possess the league lowest shot volume inside the penalty box.'
+    },
+    stats: {
+      h2h: { homeWins: 0, draws: 1, awayWins: 5, lastResult: 'Le Havre 1-4 PSG' },
+      homeAvgGoalsScored: 0.7,
+      homeAvgGoalsConceded: 2.4,
+      awayAvgGoalsScored: 2.8,
+      awayAvgGoalsConceded: 0.6,
+      referee: 'Clément Turpin'
+    }
+  },
+  {
+    id: 't2',
+    leagueId: 'laliga',
+    leagueName: 'La Liga EA Sports',
+    country: 'Spain',
+    flag: '🇪🇸',
+    round: 'Matchday 11',
+    status: 'UPCOMING',
+    time: '20:00',
+    isBanker: true,
+    badgeText: '🔥 VALUE PICK',
+    badgeType: 'neon',
+    homeTeam: {
+      name: 'Villarreal',
+      shortName: 'VIL',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/102.png',
+      rank: 4,
+      form: ['W', 'W', 'D', 'W', 'L'],
+      xG: 2.42
+    },
+    awayTeam: {
+      name: 'Espanyol',
+      shortName: 'ESP',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/88.png',
+      rank: 15,
+      form: ['L', 'L', 'W', 'L', 'L'],
+      xG: 1.05
+    },
+    prediction: {
+      primary: 'Home Win (1)',
+      probability: '84%',
+      primaryType: '1',
+      correctScore: '2 - 1',
+      averageGoals: 'Over 2.5 Goals',
+      averageGoalsOdds: '1.68',
+      btts: 'Yes (72%)',
+      fullGameScore: 'Villarreal 2 - 1 Espanyol',
+      confidenceRating: 5,
+      confidenceText: 'Very High (87%)',
+      reasoning: 'The Yellow Submarine at Estadio de la Cerámica have won 4 of their last 5 outings, averaging 2.3 goals. Espanyol have defensive vulnerabilities on counter-attacks down the flanks.'
+    },
+    stats: {
+      h2h: { homeWins: 14, draws: 6, awayWins: 4, lastResult: 'Espanyol 1-2 Villarreal' },
+      homeAvgGoalsScored: 2.2,
+      homeAvgGoalsConceded: 1.2,
+      awayAvgGoalsScored: 0.9,
+      awayAvgGoalsConceded: 1.9,
+      referee: 'Alejandro Hernández'
+    }
+  },
+  {
+    id: 't3',
+    leagueId: 'ligue1',
+    leagueName: 'French Ligue 1',
+    country: 'France',
+    flag: '🇫🇷',
+    round: 'Derby du Nord • Matchday 10',
+    status: 'UPCOMING',
+    time: '20:05',
+    isBanker: false,
+    badgeText: '⚡ DERBY SPECIAL',
+    badgeType: 'cyan',
+    homeTeam: {
+      name: 'Lille',
+      shortName: 'LIL',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/165.png',
+      rank: 5,
+      form: ['W', 'W', 'D', 'W', 'D'],
+      xG: 1.95
+    },
+    awayTeam: {
+      name: 'Lens',
+      shortName: 'RCL',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/177.png',
+      rank: 6,
+      form: ['W', 'D', 'D', 'W', 'L'],
+      xG: 1.78
+    },
+    prediction: {
+      primary: 'Both Teams To Score (BTTS: Yes)',
+      probability: '83%',
+      primaryType: 'BTTS',
+      correctScore: '2 - 2',
+      averageGoals: 'Over 2.5 Goals',
+      averageGoalsOdds: '1.85',
+      btts: 'Yes (83%)',
+      fullGameScore: 'Lille 2 - 2 Lens',
+      confidenceRating: 4,
+      confidenceText: 'High Value (85%)',
+      reasoning: 'The fierce Derby du Nord consistently produces high drama and cards. Both sides possess aggressive wingbacks and have scored in 9 of their last 10 respective Ligue 1 games.'
+    },
+    stats: {
+      h2h: { homeWins: 7, draws: 4, awayWins: 5, lastResult: 'Lille 2-1 Lens' },
+      homeAvgGoalsScored: 1.8,
+      homeAvgGoalsConceded: 1.1,
+      awayAvgGoalsScored: 1.6,
+      awayAvgGoalsConceded: 1.2,
+      referee: 'Benoît Bastien'
+    }
+  },
+  {
+    id: 't4',
+    leagueId: 'bundesliga',
+    leagueName: 'German Bundesliga / DFB',
+    country: 'Germany',
+    flag: '🇩🇪',
+    round: 'Second Round',
+    status: 'UPCOMING',
+    time: '19:30',
+    isBanker: false,
+    badgeText: '🎯 SHARP PICK',
+    badgeType: 'cyan',
+    homeTeam: {
+      name: 'SV Elversberg',
+      shortName: 'ELV',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/6641.png',
+      rank: 8,
+      form: ['W', 'W', 'D', 'L', 'W'],
+      xG: 1.45
+    },
+    awayTeam: {
+      name: 'Mainz 05',
+      shortName: 'M05',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/134.png',
+      rank: 11,
+      form: ['D', 'L', 'W', 'D', 'W'],
+      xG: 1.92
+    },
+    prediction: {
+      primary: 'Away Win or Draw (X2) & Over 1.5',
+      probability: '82%',
+      primaryType: 'X2',
+      correctScore: '1 - 2',
+      averageGoals: 'Over 2.5 Goals',
+      averageGoalsOdds: '1.74',
+      btts: 'Yes (79%)',
+      fullGameScore: 'SV Elversberg 1 - 2 Mainz',
+      confidenceRating: 4,
+      confidenceText: 'High Probability (82%)',
+      reasoning: 'Bundesliga top-flight quality favored for Mainz. While Elversberg are dangerous at home in the 2. Bundesliga, Mainz pressing structure creates high recovery turnovers in dangerous zones.'
+    },
+    stats: {
+      h2h: { homeWins: 0, draws: 0, awayWins: 2, lastResult: 'Elversberg 0-1 Mainz' },
+      homeAvgGoalsScored: 1.5,
+      homeAvgGoalsConceded: 1.4,
+      awayAvgGoalsScored: 1.8,
+      awayAvgGoalsConceded: 1.5,
+      referee: 'Daniel Siebert'
+    }
+  },
+  {
+    id: 't5',
+    leagueId: 'championship',
+    leagueName: 'English Championship',
+    country: 'England',
+    flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    round: 'Gameweek 14',
+    status: 'UPCOMING',
+    time: '20:00',
+    isBanker: true,
+    badgeText: '👑 VALUE PICK',
+    badgeType: 'gold',
+    homeTeam: {
+      name: 'Sheffield United',
+      shortName: 'SHU',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/398.png',
+      rank: 3,
+      form: ['W', 'W', 'W', 'L', 'D'],
+      xG: 2.10
+    },
+    awayTeam: {
+      name: 'Wrexham',
+      shortName: 'WRE',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/409.png',
+      rank: 9,
+      form: ['W', 'D', 'L', 'W', 'W'],
+      xG: 1.40
+    },
+    prediction: {
+      primary: 'Home Win (1)',
+      probability: '80%',
+      primaryType: '1',
+      correctScore: '2 - 1',
+      averageGoals: 'Over 2.5 Goals',
+      averageGoalsOdds: '1.82',
+      btts: 'Yes',
+      fullGameScore: 'Sheffield United 2 - 1 Wrexham',
+      confidenceRating: 4,
+      confidenceText: 'High Confidence (83%)',
+      reasoning: 'Bramall Lane fortress advantage. The Blades have won 6 of their 7 home league fixtures this campaign. Wrexham have shown bravery but suffer defensive transitions against Championship frontrunners.'
+    },
+    stats: {
+      h2h: { homeWins: 3, draws: 1, awayWins: 1, lastResult: 'Sheffield Utd 3-1 Wrexham' },
+      homeAvgGoalsScored: 2.1,
+      homeAvgGoalsConceded: 0.8,
+      awayAvgGoalsScored: 1.4,
+      awayAvgGoalsConceded: 1.5,
+      referee: 'Andy Davies'
+    }
+  },
+  {
+    id: 't6',
+    leagueId: 'ligaportugal',
+    leagueName: 'Portuguese Primeira Liga',
+    country: 'Portugal',
+    flag: '🇵🇹',
+    round: 'Matchday 10',
+    status: 'UPCOMING',
+    time: '20:15',
+    isBanker: true,
+    badgeText: '🔥 SUPER SINGLE',
+    badgeType: 'gold',
+    homeTeam: {
+      name: 'Casa Pia',
+      shortName: 'CAS',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/17855.png',
+      rank: 11,
+      form: ['L', 'D', 'W', 'L', 'L'],
+      xG: 0.95
+    },
+    awayTeam: {
+      name: 'Sporting CP',
+      shortName: 'SCP',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/300.png',
+      rank: 1,
+      form: ['W', 'W', 'W', 'W', 'W'],
+      xG: 3.12
+    },
+    prediction: {
+      primary: 'Away Win (2) & Over 1.5',
+      probability: '89%',
+      primaryType: '2',
+      correctScore: '0 - 3',
+      averageGoals: 'Over 2.5 Goals',
+      averageGoalsOdds: '1.48',
+      btts: 'No (75%)',
+      fullGameScore: 'Casa Pia 0 - 3 Sporting CP',
+      confidenceRating: 5,
+      confidenceText: 'Banker (92%)',
+      reasoning: 'Sporting CP are in sensational goalscoring rhythm, registering 28 goals in 9 league games. Casa Pia lack the defensive personnel to neutralize Sporting relentless wing overloads.'
+    },
+    stats: {
+      h2h: { homeWins: 0, draws: 0, awayWins: 6, lastResult: 'Sporting CP 4-0 Casa Pia' },
+      homeAvgGoalsScored: 0.9,
+      homeAvgGoalsConceded: 2.1,
+      awayAvgGoalsScored: 3.1,
+      awayAvgGoalsConceded: 0.4,
+      referee: 'Fabio Verissimo'
+    }
+  },
+  {
+    id: 't7',
+    leagueId: 'turkish',
+    leagueName: 'Turkish Süper Lig',
+    country: 'Turkey',
+    flag: '🇹🇷',
+    round: 'Matchday 11',
+    status: 'UPCOMING',
+    time: '17:00',
+    isBanker: true,
+    badgeText: '🌟 EARLY GOAL PICK',
+    badgeType: 'neon',
+    homeTeam: {
+      name: 'Konyaspor',
+      shortName: 'KON',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/2214.png',
+      rank: 12,
+      form: ['L', 'W', 'L', 'D', 'L'],
+      xG: 1.15
+    },
+    awayTeam: {
+      name: 'Galatasaray',
+      shortName: 'GAL',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/436.png',
+      rank: 1,
+      form: ['W', 'W', 'W', 'W', 'D'],
+      xG: 2.90
+    },
+    prediction: {
+      primary: 'Away Win (2) & Over 2.5 Goals',
+      probability: '86%',
+      primaryType: '2+OV25',
+      correctScore: '1 - 3',
+      averageGoals: 'Over 2.5 Goals',
+      averageGoalsOdds: '1.60',
+      btts: 'Yes (74%)',
+      fullGameScore: 'Konyaspor 1 - 3 Galatasaray',
+      confidenceRating: 5,
+      confidenceText: 'High Confidence (88%)',
+      reasoning: 'Galatasaray attacking quartet of Osimhen and Icardi is overwhelming Turkish defenses, averaging 2.9 goals per match. Konyaspor have conceded 2+ in 4 straight games.'
+    },
+    stats: {
+      h2h: { homeWins: 3, draws: 2, awayWins: 9, lastResult: 'Konyaspor 1-3 Galatasaray' },
+      homeAvgGoalsScored: 1.2,
+      homeAvgGoalsConceded: 2.0,
+      awayAvgGoalsScored: 2.8,
+      awayAvgGoalsConceded: 0.9,
+      referee: 'Atilla Karaoglan'
+    }
+  },
+  {
+    id: 't8',
     leagueId: 'epl',
     leagueName: 'English Premier League',
     country: 'England',
     flag: '🇬🇧',
-    round: 'Gameweek 10',
+    round: 'Gameweek 10 • Saturday Marquee',
     status: 'UPCOMING',
-    time: '16:00',
+    time: '12:30',
     isBanker: true,
-    badgeText: '🌟 EARLY VALUE PICK',
+    badgeText: '👑 GAMEWEEK 10 BANKER',
     badgeType: 'gold',
     homeTeam: {
       name: 'Chelsea',
       shortName: 'CHE',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8455.png',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/363.png',
       rank: 4,
       form: ['W', 'W', 'D', 'L', 'W'],
       xG: 2.15
@@ -746,131 +1096,31 @@ const TOMORROW_MATCHES = [
     awayTeam: {
       name: 'Manchester United',
       shortName: 'MUN',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/10267.png',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/360.png',
       rank: 8,
       form: ['W', 'L', 'D', 'W', 'L'],
       xG: 1.62
     },
     prediction: {
       primary: 'Both Teams To Score (BTTS: Yes)',
-      probability: '86%',
+      probability: '88%',
       primaryType: 'BTTS',
       correctScore: '2 - 2',
       averageGoals: 'Over 2.5 Goals',
-      averageGoalsOdds: '1.72',
-      btts: 'Yes (86%)',
+      averageGoalsOdds: '1.65',
+      btts: 'Yes (88%)',
       fullGameScore: 'Chelsea 2 - 2 Man United',
       confidenceRating: 5,
-      confidenceText: 'High Confidence (87%)',
-      reasoning: 'Chelsea vs Manchester United fixtures have yielded 19 goals in their past 4 encounters. Both outfits possess elite attacking talent paired with porous transition defense.'
+      confidenceText: 'High Confidence (89%)',
+      reasoning: 'Chelsea vs Manchester United clashes have generated 19 goals across their last 4 showdowns. Both teams have defensive transition vulnerabilities while sporting rapid wing forwards.'
     },
     stats: {
-      h2h: { homeWins: 3, draws: 5, awayWins: 4, lastResult: 'Chelsea 4-3 Man United' },
+      h2h: { homeWins: 4, draws: 4, awayWins: 4, lastResult: 'Chelsea 4-3 Man United' },
       homeAvgGoalsScored: 2.2,
       homeAvgGoalsConceded: 1.3,
       awayAvgGoalsScored: 1.5,
       awayAvgGoalsConceded: 1.6,
-      referee: 'Robert Jones'
-    }
-  },
-  {
-    id: 't2',
-    leagueId: 'ucl',
-    leagueName: 'UEFA Champions League',
-    country: 'Europe',
-    flag: '🇪🇺',
-    round: 'League Phase - Matchday 4',
-    status: 'UPCOMING',
-    time: '21:00',
-    isBanker: true,
-    badgeText: '👑 TOMORROW BANKER',
-    badgeType: 'neon',
-    homeTeam: {
-      name: 'Paris Saint-Germain',
-      shortName: 'PSG',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/9847.png',
-      rank: 1,
-      form: ['W', 'W', 'W', 'D', 'W'],
-      xG: 2.40
-    },
-    awayTeam: {
-      name: 'Atletico Madrid',
-      shortName: 'ATM',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/9906.png',
-      rank: 4,
-      form: ['W', 'L', 'W', 'W', 'L'],
-      xG: 1.45
-    },
-    prediction: {
-      primary: 'Home Win (1)',
-      probability: '77%',
-      primaryType: '1',
-      correctScore: '2 - 0',
-      averageGoals: 'Under 3.5 Goals',
-      averageGoalsOdds: '1.58',
-      btts: 'No',
-      fullGameScore: 'PSG 2 - 0 Atletico Madrid',
-      confidenceRating: 4,
-      confidenceText: 'Very High (84%)',
-      reasoning: 'PSG need 3 points at the Parc des Princes. Atletico away from the Metropolitano have struggled in continental tests, conceding first in 3 of their last 4 away games.'
-    },
-    stats: {
-      h2h: { homeWins: 1, draws: 1, awayWins: 1, lastResult: 'First UCL meeting' },
-      homeAvgGoalsScored: 2.3,
-      homeAvgGoalsConceded: 0.8,
-      awayAvgGoalsScored: 1.4,
-      awayAvgGoalsConceded: 1.1,
-      referee: 'Szymon Marciniak'
-    }
-  },
-  {
-    id: 't3',
-    leagueId: 'bundesliga',
-    leagueName: 'Bundesliga',
-    country: 'Germany',
-    flag: '🇩🇪',
-    round: 'Matchday 9',
-    status: 'UPCOMING',
-    time: '15:30',
-    isBanker: false,
-    badgeText: '🎯 SHARP PICK',
-    badgeType: 'cyan',
-    homeTeam: {
-      name: 'Borussia Dortmund',
-      shortName: 'BVB',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/9789.png',
-      rank: 5,
-      form: ['L', 'W', 'L', 'W', 'L'],
-      xG: 2.30
-    },
-    awayTeam: {
-      name: 'RB Leipzig',
-      shortName: 'RBL',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/178475.png',
-      rank: 2,
-      form: ['W', 'W', 'W', 'D', 'W'],
-      xG: 2.10
-    },
-    prediction: {
-      primary: 'Over 2.5 Goals & BTTS',
-      probability: '88%',
-      primaryType: 'OV25',
-      correctScore: '2 - 3',
-      averageGoals: 'Over 3.5 Goals (High Value)',
-      averageGoalsOdds: '2.05',
-      btts: 'Yes (92%)',
-      fullGameScore: 'Dortmund 2 - 3 RB Leipzig',
-      confidenceRating: 4,
-      confidenceText: 'High Value (86%)',
-      reasoning: 'Signal Iduna Park hosts two of Europe most explosive offenses. Both sides prioritize vertical transition over ball retention, ensuring high shot volume.'
-    },
-    stats: {
-      h2h: { homeWins: 6, draws: 1, awayWins: 7, lastResult: 'RB Leipzig 4-1 Dortmund' },
-      homeAvgGoalsScored: 2.5,
-      homeAvgGoalsConceded: 1.7,
-      awayAvgGoalsScored: 2.2,
-      awayAvgGoalsConceded: 0.9,
-      referee: 'Tobias Stieler'
+      referee: 'Michael Oliver'
     }
   }
 ];
@@ -878,98 +1128,98 @@ const TOMORROW_MATCHES = [
 const LIVE_MATCHES = [
   {
     id: 'l1',
-    leagueId: 'ucl',
-    leagueName: 'UEFA Champions League',
-    country: 'Europe',
-    flag: '🇪🇺',
+    leagueId: 'seriea',
+    leagueName: 'Italian Serie A',
+    country: 'Italy',
+    flag: '🇮🇹',
     status: 'LIVE',
-    minute: 68,
-    homeScore: 1,
+    minute: 58,
+    homeScore: 2,
     awayScore: 1,
     momentumTeam: 'home',
-    momentumPercent: 72,
+    momentumPercent: 74,
     homeTeam: {
-      name: 'Liverpool',
-      shortName: 'LIV',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8650.png',
-      stats: { possession: 64, shots: 17, shotsOnTarget: 7, dangerousAttacks: 58 }
+      name: 'Fiorentina',
+      shortName: 'FIO',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/109.png',
+      stats: { possession: 57, shots: 14, shotsOnTarget: 6, dangerousAttacks: 49 }
     },
     awayTeam: {
-      name: 'Bayer Leverkusen',
-      shortName: 'B04',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8178.png',
-      stats: { possession: 36, shots: 6, shotsOnTarget: 2, dangerousAttacks: 22 }
+      name: 'Atalanta',
+      shortName: 'ATA',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/105.png',
+      stats: { possession: 43, shots: 9, shotsOnTarget: 4, dangerousAttacks: 31 }
     },
     liveTip: {
-      market: 'Over 2.5 Goals (In-Play Tip)',
-      confidence: '89%',
-      tipReason: 'Anfield pressure is peaking. Liverpool has generated 8 box touches in the last 6 minutes with 0.82 xG surge.',
-      recommendedAction: 'BACK OVER 2.5 GOALS NOW @ 1.85',
-      secondaryLiveTip: 'Next Goal: Liverpool (78% probability)'
+      market: 'Over 3.5 Goals (In-Play Value Tip)',
+      confidence: '88%',
+      tipReason: 'End-to-end transitional tempo at Artemio Franchi. Both managers committed to aggressive high pressing with defensive spaces opening up.',
+      recommendedAction: 'BACK OVER 3.5 GOALS NOW @ 1.82',
+      secondaryLiveTip: 'Next Goal: Fiorentina (74% probability)'
     }
   },
   {
     id: 'l2',
-    leagueId: 'laliga',
-    leagueName: 'La Liga EA Sports',
-    country: 'Spain',
-    flag: '🇪🇸',
+    leagueId: 'seriea',
+    leagueName: 'Italian Serie A',
+    country: 'Italy',
+    flag: '🇮🇹',
     status: 'LIVE',
-    minute: 54,
-    homeScore: 2,
-    awayScore: 0,
+    minute: 78,
+    homeScore: 1,
+    awayScore: 1,
     momentumTeam: 'home',
-    momentumPercent: 81,
+    momentumPercent: 68,
     homeTeam: {
-      name: 'Atletico Madrid',
-      shortName: 'ATM',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/9906.png',
-      stats: { possession: 58, shots: 12, shotsOnTarget: 5, dangerousAttacks: 44 }
+      name: 'Frosinone',
+      shortName: 'FRO',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/4057.png',
+      stats: { possession: 52, shots: 11, shotsOnTarget: 4, dangerousAttacks: 38 }
     },
     awayTeam: {
-      name: 'Las Palmas',
-      shortName: 'LPA',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8306.png',
-      stats: { possession: 42, shots: 3, shotsOnTarget: 0, dangerousAttacks: 14 }
+      name: 'Lecce',
+      shortName: 'LEC',
+      logo: 'https://a.espncdn.com/i/teamlogos/soccer/500/113.png',
+      stats: { possession: 48, shots: 8, shotsOnTarget: 3, dangerousAttacks: 26 }
     },
     liveTip: {
-      market: 'Atletico Madrid Clean Sheet (In-Play)',
-      confidence: '93%',
-      tipReason: 'Las Palmas have registered 0 shots on target through 54 minutes. Simeone has shifted into low-block game control.',
-      recommendedAction: 'BACK ATLETICO WIN TO NIL @ 1.55',
-      secondaryLiveTip: 'Full Time Correct Score: 2-0 or 3-0'
+      market: 'Double Chance Frosinone or Draw (1X)',
+      confidence: '92%',
+      tipReason: 'Frosinone pressing aggressively in the final third with 5 corners earned in the second half. Lecce content to absorb pressure.',
+      recommendedAction: 'BACK FROSINONE OR DRAW (1X) @ 1.45',
+      secondaryLiveTip: 'Late Corner Count Over 9.5'
     }
   },
   {
     id: 'l3',
-    leagueId: 'seriea',
-    leagueName: 'Serie A',
-    country: 'Italy',
-    flag: '🇮🇹',
+    leagueId: 'saudi',
+    leagueName: 'Saudi Pro League',
+    country: 'Saudi Arabia',
+    flag: '🇸🇦',
     status: 'LIVE',
-    minute: 81,
-    homeScore: 0,
-    awayScore: 1,
+    minute: 38,
+    homeScore: 1,
+    awayScore: 0,
     momentumTeam: 'home',
-    momentumPercent: 88,
+    momentumPercent: 79,
     homeTeam: {
-      name: 'Juventus',
-      shortName: 'JUV',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/9885.png',
-      stats: { possession: 71, shots: 21, shotsOnTarget: 8, dangerousAttacks: 74 }
+      name: 'Al-Nassr',
+      shortName: 'NAS',
+      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8106.png',
+      stats: { possession: 62, shots: 9, shotsOnTarget: 5, dangerousAttacks: 36 }
     },
     awayTeam: {
-      name: 'Parma',
-      shortName: 'PAR',
-      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/10167.png',
-      stats: { possession: 29, shots: 4, shotsOnTarget: 2, dangerousAttacks: 16 }
+      name: 'Al-Hilal',
+      shortName: 'HIL',
+      logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8108.png',
+      stats: { possession: 38, shots: 4, shotsOnTarget: 2, dangerousAttacks: 19 }
     },
     liveTip: {
-      market: 'Juventus to Score Next Goal',
-      confidence: '85%',
-      tipReason: 'Parma goalkeeper under sustained siege. Juventus pushing 6 players inside the 18-yard box with 9 corners won.',
-      recommendedAction: 'JUVENTUS NEXT GOAL @ 2.10',
-      secondaryLiveTip: 'Late Equalizer Expected (81st - 90th min)'
+      market: 'Both Teams To Score (BTTS Live)',
+      confidence: '86%',
+      tipReason: 'Riyadh Derby intensity is peaking. Al-Hilal have registered 2 close-range efforts and average 1.8 second-half goals.',
+      recommendedAction: 'BACK BTTS (YES) IN-PLAY @ 1.68',
+      secondaryLiveTip: 'Next Goal: Al-Hilal Equalizer'
     }
   }
 ];
