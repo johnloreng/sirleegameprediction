@@ -732,19 +732,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function fetchAndRenderStandings(leagueKey, forceRefresh = false) {
-    // 1. Immediately render cached or baseline 2026 dataset so UI is instantly responsive
+    // 1. Always immediately show local 2026 baseline for the selected league
+    //    so the table updates instantly on selection without waiting for the API
     const baselineList = (typeof LEAGUE_STANDINGS !== 'undefined' && LEAGUE_STANDINGS[leagueKey]) || [];
-    if (!state.currentStandingsData || state.currentStandingsData.length === 0 || forceRefresh) {
-      state.currentStandingsData = baselineList;
-      filterAndRenderStandings();
-      updateStandingsMeta(leagueKey, false);
+    state.currentStandingsData = baselineList;
+    filterAndRenderStandings();
+    updateStandingsMeta(leagueKey, false);
+
+    // Show a subtle loading dim while fetching live data
+    if (els.standingsTableBody) {
+      els.standingsTableBody.style.opacity = '0.75';
+      els.standingsTableBody.style.transition = 'opacity 0.2s ease';
     }
 
-    if (forceRefresh && els.standingsTableBody) {
-      els.standingsTableBody.style.opacity = '0.6';
-    }
-
-    // 2. Fetch latest live standings from Real-Time ESPN Open API
+    // 2. Fetch latest live standings from Real-Time ESPN Open API in the background
     try {
       if (window.FootballDataService && typeof window.FootballDataService.fetchLeagueStandings === 'function') {
         const liveList = await window.FootballDataService.fetchLeagueStandings(leagueKey, forceRefresh);
