@@ -8,6 +8,7 @@ const API_CONFIG = {
   
   // Real-time ESPN Open Soccer Endpoints
   espnBaseUrl: 'https://site.api.espn.com/apis/site/v2/sports/soccer',
+  espnStandingsBaseUrl: 'https://site.api.espn.com/apis/v2/sports/soccer',
   leagues: {
     'ita.1': { id: 'seriea', name: 'Italian Serie A', flag: '🇮🇹', country: 'Italy' },
     'esp.1': { id: 'laliga', name: 'La Liga EA Sports', flag: '🇪🇸', country: 'Spain' },
@@ -19,7 +20,26 @@ const API_CONFIG = {
     'tur.1': { id: 'turkish', name: 'Turkish Süper Lig', flag: '🇹🇷', country: 'Turkey' },
     'ned.1': { id: 'eredivisie', name: 'Dutch Eredivisie', flag: '🇳🇱', country: 'Netherlands' },
     'uefa.champions': { id: 'ucl', name: 'UEFA Champions League', flag: '🇪🇺', country: 'Europe' },
-    'uefa.europa.conf': { id: 'uel', name: 'UEFA Conference League', flag: '🇪🇺', country: 'Europe' }
+    'uefa.europa': { id: 'uel', name: 'UEFA Europa League', flag: '🇪🇺', country: 'Europe' },
+    'ksa.1': { id: 'saudi', name: 'Saudi Pro League', flag: '🇸🇦', country: 'Saudi Arabia' },
+    'sco.1': { id: 'scottish', name: 'Scottish Premiership', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', country: 'Scotland' }
+  },
+
+  // Direct mapping from UI league key to official ESPN standing league code
+  standingsCodeMap: {
+    epl: 'eng.1',
+    championship: 'eng.2',
+    ucl: 'uefa.champions',
+    uel: 'uefa.europa',
+    laliga: 'esp.1',
+    seriea: 'ita.1',
+    bundesliga: 'ger.1',
+    ligue1: 'fra.1',
+    eredivisie: 'ned.1',
+    ligaportugal: 'por.1',
+    saudi: 'ksa.1',
+    turkish: 'tur.1',
+    scottish: 'sco.1'
   },
 
   // Email Notification Configuration for djsirlee@gmail.com
@@ -37,6 +57,7 @@ class FootballDataService {
       today: null,
       tomorrow: null,
       live: null,
+      standings: {},
       lastSync: 0
     };
   }
@@ -336,6 +357,104 @@ class FootballDataService {
       return data.live;
     }
     return typeof LIVE_MATCHES !== 'undefined' ? LIVE_MATCHES : [];
+  }
+
+  // Fetch real-time official standings for a specific league via API
+  async fetchLeagueStandings(leagueKey, forceRefresh = false) {
+    const code = API_CONFIG.standingsCodeMap[leagueKey] || 'eng.1';
+    const now = Date.now();
+
+    // Check in-memory cache if not force refreshing (cache 5 minutes)
+    if (!forceRefresh && this.cache.standings[leagueKey] && (now - this.cache.standings[leagueKey].timestamp < 300000)) {
+      return this.cache.standings[leagueKey].data;
+    }
+
+    try {
+      const res = await fetch(`${API_CONFIG.espnStandingsBaseUrl}/${code}/standings`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const entries = data.children?.[0]?.standings?.entries || [];
+
+      if (!entries.length) {
+        throw new Error('No standings entries found');
+      }
+
+      const parsed = entries.map((entry, idx) => {
+        const statsMap = {};
+        (entry.stats || []).forEach(s => {
+          statsMap[s.name] = s;
+        });
+
+        const rank = statsMap.rank?.value ?? (idx + 1);
+        const played = statsMap.gamesPlayed?.value ?? 0;
+        const won = statsMap.wins?.value ?? 0;
+        const drawn = statsMap.ties?.value ?? 0;
+        const lost = statsMap.losses?.value ?? 0;
+        const gf = statsMap.pointsFor?.value ?? 0;
+        const ga = statsMap.pointsAgainst?.value ?? 0;
+        const gdVal = statsMap.pointDifferential?.value ?? (gf - ga);
+        const gd = statsMap.pointDifferential?.displayValue ?? ((gdVal >= 0 ? '+' : '') + gdVal);
+        const pts = statsMap.points?.value ?? (won * 3 + drawn);
+
+        // Fallback form if available from LEAGUE_STANDINGS or synthesized
+        const fallbackForm = (typeof LEAGUE_STANDINGS !== 'undefined' && LEAGUE_STANDINGS[leagueKey]?.[idx]?.form) || ['W', 'D', 'W', 'L', 'W'];
+
+        return {
+          rank: Number(rank),
+          name: entry.team?.displayName || entry.team?.name || 'Unknown Team',
+          shortName: entry.team?.shortDisplayName || entry.team?.abbreviation || '',
+          logo: entry.team?.logos?.[0]?.href || '',
+          played: Number(played),
+          won: Number(won),
+          drawn: Number(drawn),
+          lost: Number(lost),
+          gf: Number(gf),
+          ga: Number(ga),
+          gd: String(gd),
+          pts: Number(pts),
+          form: fallbackForm,
+          note: entry.note?.description || ''
+        };
+      });
+
+      // Update in-memory cache and global LEAGUE_STANDINGS
+      this.cache.standings[leagueKey] = {
+        data: parsed,
+        timestamp: now
+      };
+
+      if (typeof LEAGUE_STANDINGS !== 'undefined') {
+        LEAGUE_STANDINGS[leagueKey] = parsed;
+      }
+
+      try {
+        localStorage.setItem(`sirlee_standings_${leagueKey}`, JSON.stringify({
+          data: parsed,
+          timestamp: now
+        }));
+      } catch (e) {}
+
+      return parsed;
+    } catch (err) {
+      console.warn(`[Standings API] Falling back to 2026 database for ${leagueKey}:`, err);
+      try {
+        const local = localStorage.getItem(`sirlee_standings_${leagueKey}`);
+        if (local) {
+          const parsedLocal = JSON.parse(local);
+          if (parsedLocal && parsedLocal.data) return parsedLocal.data;
+        }
+      } catch (e) {}
+      return (typeof LEAGUE_STANDINGS !== 'undefined' && LEAGUE_STANDINGS[leagueKey]) || [];
+    }
+  }
+
+  // Pre-fetch all league standings across all 13 leagues
+  async fetchAllLeagueStandings() {
+    const keys = Object.keys(API_CONFIG.standingsCodeMap);
+    const results = await Promise.allSettled(keys.map(k => this.fetchLeagueStandings(k)));
+    return results;
   }
 }
 

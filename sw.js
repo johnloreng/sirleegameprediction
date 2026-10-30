@@ -1,6 +1,6 @@
 // Service Worker for sirleegameprediction PWA
-// Version: 1.1.0
-const CACHE_NAME = 'sirlee-prediction-v1.1.0';
+// Version: 1.2.0
+const CACHE_NAME = 'sirlee-prediction-v1.2.0';
 
 // Assets to cache immediately on service worker installation
 const PRECACHE_ASSETS = [

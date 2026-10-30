@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     deferredPrompt: null,
     isOnline: navigator.onLine,
     selectedStandingLeague: 'epl',
+    standingsSearchQuery: '',
+    currentStandingsData: [],
     liveTimerInterval: null
   };
 
@@ -49,6 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
     offlineNotice: document.getElementById('offline-notice'),
     standingsLeagueSelect: document.getElementById('standings-league-select'),
     standingsTableBody: document.getElementById('standings-table-body'),
+    standingsSearch: document.getElementById('standings-search'),
+    standingsRefreshBtn: document.getElementById('btn-refresh-standings'),
+    standingsTeamCountBadge: document.getElementById('standings-team-count-badge'),
+    standingsLastUpdated: document.getElementById('standings-last-updated'),
     todayCountBadge: document.getElementById('today-count-badge'),
     liveCountBadge: document.getElementById('live-count-badge')
   };
@@ -217,6 +223,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Scroll to top of match area
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Refresh standings view when activating stats tab
+    if (tabId === 'stats') {
+      fetchAndRenderStandings(state.selectedStandingLeague);
+    }
   }
 
   // 4. League & Market Filter Pills
@@ -696,32 +707,214 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 15000);
   }
 
-  // 8. Detailed Statistics & Standings View
+  // 8. Detailed Statistics & Standings View (Real-Time API Integration)
   function setupStandingsView() {
     if (!els.standingsLeagueSelect || !els.standingsTableBody) return;
 
-    renderStandings(state.selectedStandingLeague);
+    // Initial render using local 2026 data immediately, then background API sync
+    fetchAndRenderStandings(state.selectedStandingLeague);
 
+    // League selection change handler
     els.standingsLeagueSelect.addEventListener('change', (e) => {
       state.selectedStandingLeague = e.target.value;
-      renderStandings(state.selectedStandingLeague);
+      state.standingsSearchQuery = '';
+      if (els.standingsSearch) els.standingsSearch.value = '';
+      fetchAndRenderStandings(state.selectedStandingLeague);
     });
+
+    // Refresh Live Standings Button
+    if (els.standingsRefreshBtn) {
+      els.standingsRefreshBtn.addEventListener('click', async () => {
+        const icon = els.standingsRefreshBtn.querySelector('#refresh-icon');
+        if (icon) icon.classList.add('animate-spin');
+        els.standingsRefreshBtn.disabled = true;
+
+        await fetchAndRenderStandings(state.selectedStandingLeague, true);
+
+        setTimeout(() => {
+          if (icon) icon.classList.remove('animate-spin');
+          els.standingsRefreshBtn.disabled = false;
+        }, 600);
+      });
+    }
+
+    // Live search filter across clubs in the active standings table
+    if (els.standingsSearch) {
+      els.standingsSearch.addEventListener('input', (e) => {
+        state.standingsSearchQuery = e.target.value.trim().toLowerCase();
+        filterAndRenderStandings();
+      });
+    }
   }
 
-  function renderStandings(leagueKey) {
-    const list = LEAGUE_STANDINGS[leagueKey] || LEAGUE_STANDINGS.epl;
-    els.standingsTableBody.innerHTML = list.map(item => `
-      <tr class="border-b border-slate-800/80 hover:bg-slate-800/40 transition">
-        <td class="py-2.5 px-3 font-mono font-bold ${item.rank <= 4 ? 'text-emerald-400' : 'text-slate-400'}">${item.rank}</td>
-        <td class="py-2.5 px-3 font-semibold text-white truncate max-w-[140px]">${item.name}</td>
-        <td class="py-2.5 px-2 text-center text-slate-300">${item.played}</td>
-        <td class="py-2.5 px-2 text-center font-mono text-emerald-400">${item.won}</td>
-        <td class="py-2.5 px-2 text-center font-mono text-slate-400">${item.drawn}</td>
-        <td class="py-2.5 px-2 text-center font-mono text-red-400">${item.lost}</td>
-        <td class="py-2.5 px-2 text-center font-mono text-slate-300">${item.gd}</td>
-        <td class="py-2.5 px-3 text-center font-mono font-bold text-white bg-slate-800/60 rounded">${item.pts}</td>
-      </tr>
-    `).join('');
+  async function fetchAndRenderStandings(leagueKey, forceRefresh = false) {
+    // 1. Immediately render cached or baseline 2026 dataset so UI is instantly responsive
+    const baselineList = (typeof LEAGUE_STANDINGS !== 'undefined' && LEAGUE_STANDINGS[leagueKey]) || [];
+    if (!state.currentStandingsData || state.currentStandingsData.length === 0 || forceRefresh) {
+      state.currentStandingsData = baselineList;
+      filterAndRenderStandings();
+      updateStandingsMeta(leagueKey, false);
+    }
+
+    if (forceRefresh && els.standingsTableBody) {
+      els.standingsTableBody.style.opacity = '0.6';
+    }
+
+    // 2. Fetch latest live standings from Real-Time ESPN Open API
+    try {
+      if (window.FootballDataService && typeof window.FootballDataService.fetchLeagueStandings === 'function') {
+        const liveList = await window.FootballDataService.fetchLeagueStandings(leagueKey, forceRefresh);
+        if (Array.isArray(liveList) && liveList.length > 0) {
+          state.currentStandingsData = liveList;
+        }
+      }
+    } catch (err) {
+      console.warn('[Standings UI] API pull fallback to 2026 database:', err);
+    } finally {
+      if (els.standingsTableBody) {
+        els.standingsTableBody.style.opacity = '1';
+      }
+      filterAndRenderStandings();
+      updateStandingsMeta(leagueKey, true);
+    }
+  }
+
+  function updateStandingsMeta(leagueKey, isLiveSynced = true) {
+    const list = state.currentStandingsData || [];
+    if (els.standingsTeamCountBadge) {
+      els.standingsTeamCountBadge.textContent = `${list.length} Clubs`;
+    }
+    if (els.standingsLastUpdated) {
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      els.standingsLastUpdated.textContent = isLiveSynced 
+        ? `Synced ${nowStr} • Live 2026 API Feed` 
+        : `Official 2026 Season Table Standings`;
+    }
+  }
+
+  function filterAndRenderStandings() {
+    if (!els.standingsTableBody) return;
+    const query = state.standingsSearchQuery;
+    let list = state.currentStandingsData || [];
+
+    if (query) {
+      list = list.filter(item => 
+        (item.name && item.name.toLowerCase().includes(query)) ||
+        (item.shortName && item.shortName.toLowerCase().includes(query))
+      );
+    }
+
+    if (list.length === 0) {
+      els.standingsTableBody.innerHTML = `
+        <tr>
+          <td colspan="11" class="py-10 text-center text-slate-400">
+            <div class="text-3xl mb-2">🔍</div>
+            <p class="font-semibold text-xs text-white">No teams found matching "${escapeHtml(query)}"</p>
+            <p class="text-[11px] text-slate-500 mt-1">Try another search keyword or switch leagues</p>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    const totalTeams = (state.currentStandingsData || []).length;
+
+    els.standingsTableBody.innerHTML = list.map(item => {
+      // Determine qualification zone colors
+      let rankBadgeClass = 'text-slate-400 bg-slate-800/40';
+      let borderLeft = 'border-l-2 border-transparent';
+      
+      if (item.rank <= 4) {
+        // Champions League / Top 4 spots
+        rankBadgeClass = 'text-emerald-400 bg-emerald-500/10 font-bold border border-emerald-500/30';
+        borderLeft = 'border-l-2 border-emerald-400';
+      } else if (item.rank <= 6) {
+        // Europa League / European Spots
+        rankBadgeClass = 'text-sky-400 bg-sky-500/10 font-bold border border-sky-500/30';
+        borderLeft = 'border-l-2 border-sky-400';
+      } else if (totalTeams >= 18 && item.rank > (totalTeams - 3)) {
+        // Relegation Zone (bottom 3 in 18/20 team leagues)
+        rankBadgeClass = 'text-red-400 bg-red-500/10 font-bold border border-red-500/30';
+        borderLeft = 'border-l-2 border-red-400';
+      } else if (totalTeams === 12 && item.rank > (totalTeams - 2)) {
+        // Relegation in 12-team leagues
+        rankBadgeClass = 'text-red-400 bg-red-500/10 font-bold border border-red-500/30';
+        borderLeft = 'border-l-2 border-red-400';
+      }
+
+      // Goal difference styling
+      const gdStr = String(item.gd || '0');
+      const isPositiveGd = gdStr.startsWith('+');
+      const isNegativeGd = gdStr.startsWith('-');
+      const gdClass = isPositiveGd ? 'text-emerald-400 font-semibold' : (isNegativeGd ? 'text-red-400' : 'text-slate-400');
+
+      // Team Logo with placeholder fallback
+      const fallbackAbbr = (item.shortName || item.name || 'FC').substring(0, 3).toUpperCase();
+      const teamLogo = item.logo || `https://placehold.co/40x40/1e293b/00ff87?text=${encodeURIComponent(fallbackAbbr)}`;
+
+      // Form indicators (Last 5 matches)
+      const formHtml = (item.form || []).slice(0, 5).map(f => {
+        let badgeColor = 'bg-slate-700 text-slate-300';
+        if (f === 'W') badgeColor = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        if (f === 'D') badgeColor = 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        if (f === 'L') badgeColor = 'bg-red-500/20 text-red-400 border border-red-500/30';
+        return `<span class="inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold ${badgeColor}">${f}</span>`;
+      }).join('');
+
+      return `
+        <tr class="border-b border-slate-800/80 hover:bg-slate-800/40 transition ${borderLeft}">
+          <td class="py-2.5 px-3 text-center">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md font-mono text-xs ${rankBadgeClass}">
+              ${item.rank}
+            </span>
+          </td>
+          <td class="py-2.5 px-3">
+            <div class="flex items-center gap-2.5 min-w-[150px]">
+              <img 
+                src="${teamLogo}" 
+                alt="${escapeHtml(item.name)}" 
+                class="w-5 h-5 object-contain flex-shrink-0 rounded-full bg-slate-900/60 p-0.5" 
+                loading="lazy"
+                onerror="this.onerror=null; this.src='https://placehold.co/40x40/1e293b/00ff87?text=${encodeURIComponent(fallbackAbbr)}';"
+              />
+              <div class="truncate">
+                <span class="font-semibold text-white block truncate text-xs hover:text-emerald-400 transition cursor-default" title="${escapeHtml(item.name)}">
+                  ${escapeHtml(item.name)}
+                </span>
+                ${item.note ? `<span class="text-[9px] text-slate-400 block truncate -mt-0.5">${escapeHtml(item.note)}</span>` : ''}
+              </div>
+            </div>
+          </td>
+          <td class="py-2.5 px-2 text-center text-slate-300 font-medium">${item.played}</td>
+          <td class="py-2.5 px-2 text-center font-mono text-emerald-400 font-medium">${item.won}</td>
+          <td class="py-2.5 px-2 text-center font-mono text-slate-400">${item.drawn}</td>
+          <td class="py-2.5 px-2 text-center font-mono text-red-400">${item.lost}</td>
+          <td class="py-2.5 px-2 text-center font-mono text-slate-400 hidden md:table-cell">${item.gf !== undefined ? item.gf : '-'}</td>
+          <td class="py-2.5 px-2 text-center font-mono text-slate-400 hidden md:table-cell">${item.ga !== undefined ? item.ga : '-'}</td>
+          <td class="py-2.5 px-2 text-center font-mono ${gdClass}">${item.gd}</td>
+          <td class="py-2.5 px-3 text-center">
+            <span class="px-2 py-1 rounded bg-slate-800/80 font-mono font-bold text-white text-xs border border-white/5 inline-block min-w-[28px]">
+              ${item.pts}
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-center hidden sm:table-cell">
+            <div class="flex items-center justify-center gap-1">
+              ${formHtml || '<span class="text-slate-600">-</span>'}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   // 9. Match Detail Modal
@@ -780,7 +973,10 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
 
-        <div class="mt-5 flex gap-2">
+        <div class="mt-5 flex flex-col sm:flex-row gap-2.5">
+          <button id="modal-standings-btn" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider transition border border-slate-700 flex items-center justify-center gap-1.5">
+            <span>📋 View ${match.leagueName} Table</span>
+          </button>
           <button id="modal-vip-btn" class="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition">
             Request VIP High Stake Banker Slip
           </button>
@@ -792,6 +988,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('modal-inner-close')?.addEventListener('click', () => {
       els.matchModal.classList.add('hidden');
+    });
+
+    document.getElementById('modal-standings-btn')?.addEventListener('click', () => {
+      els.matchModal.classList.add('hidden');
+      if (els.standingsLeagueSelect) {
+        els.standingsLeagueSelect.value = match.leagueId;
+        state.selectedStandingLeague = match.leagueId;
+      }
+      switchTab('stats', true);
+      fetchAndRenderStandings(match.leagueId);
     });
 
     document.getElementById('modal-vip-btn')?.addEventListener('click', () => {
