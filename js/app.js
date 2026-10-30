@@ -772,7 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (els.standingsLastUpdated) {
       const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       els.standingsLastUpdated.textContent = isLiveSynced 
-        ? `Synced ${nowStr} • Live 2026 API Feed` 
+        ? `Synced ${nowStr} • Live Feeds` 
         : `Official 2026 Season Table Standings`;
     }
   }
