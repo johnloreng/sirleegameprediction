@@ -722,22 +722,6 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchAndRenderStandings(state.selectedStandingLeague);
     });
 
-    // Refresh Live Standings Button
-    if (els.standingsRefreshBtn) {
-      els.standingsRefreshBtn.addEventListener('click', async () => {
-        const icon = els.standingsRefreshBtn.querySelector('#refresh-icon');
-        if (icon) icon.classList.add('animate-spin');
-        els.standingsRefreshBtn.disabled = true;
-
-        await fetchAndRenderStandings(state.selectedStandingLeague, true);
-
-        setTimeout(() => {
-          if (icon) icon.classList.remove('animate-spin');
-          els.standingsRefreshBtn.disabled = false;
-        }, 600);
-      });
-    }
-
     // Live search filter across clubs in the active standings table
     if (els.standingsSearch) {
       els.standingsSearch.addEventListener('input', (e) => {
