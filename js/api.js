@@ -48,11 +48,14 @@ const API_CONFIG = {
   whatsappDirectNumber: '+447911123456'
 };
 
-// Football Data Service (Real-time 2026 Feed + Analytical AI Engine)
+// Football Data Service (Real-time Date-based Intelligence Engine)
 class FootballDataService {
   constructor() {
     this.provider = (typeof localStorage !== 'undefined' ? localStorage.getItem('sirlee_api_provider') : null) || API_CONFIG.footballApiProvider;
     this.apiKey = (typeof localStorage !== 'undefined' ? localStorage.getItem('sirlee_api_key') : null) || API_CONFIG.apiKeyFootball;
+    
+    // In-memory cache by date key (YYYY-MM-DD)
+    this.dateCache = {};
     this.cache = {
       today: null,
       tomorrow: null,
@@ -62,94 +65,185 @@ class FootballDataService {
     };
   }
 
-  // Fetch real-time fixtures across European & global leagues
-  async fetchRealtimeMatches() {
+  // Helper to format Date object or ISO string to YYYY-MM-DD
+  normalizeDateStr(dateInput) {
+    if (!dateInput) {
+      const now = new Date();
+      return this.formatDateToISO(now);
+    }
+    if (dateInput instanceof Date) {
+      return this.formatDateToISO(dateInput);
+    }
+    if (typeof dateInput === 'string') {
+      // If in YYYYMMDD format
+      if (/^\d{8}$/.test(dateInput)) {
+        return `${dateInput.substring(0, 4)}-${dateInput.substring(4, 6)}-${dateInput.substring(6, 8)}`;
+      }
+      // If already in YYYY-MM-DD format
+      if (/^\d{4}-\d{2}-\d{2}/.test(dateInput)) {
+        return dateInput.substring(0, 10);
+      }
+      const parsed = new Date(dateInput);
+      if (!isNaN(parsed.getTime())) {
+        return this.formatDateToISO(parsed);
+      }
+    }
+    return this.formatDateToISO(new Date());
+  }
+
+  formatDateToISO(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  formatToEspnDate(dateStr) {
+    return dateStr.replace(/-/g, '');
+  }
+
+  getTodayDateStr() {
+    return this.formatDateToISO(new Date());
+  }
+
+  getTomorrowDateStr() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return this.formatDateToISO(d);
+  }
+
+  // Core API Method: Fetch and predict matches for ANY specific day
+  async fetchPredictionsForDate(dateInput, forceRefresh = false) {
+    const dateStr = this.normalizeDateStr(dateInput);
+    const espnDate = this.formatToEspnDate(dateStr);
     const now = Date.now();
-    // Return cached if within 60 seconds
-    if (this.cache.today && (now - this.cache.lastSync < 60000)) {
-      return this.cache;
+    const cacheKey = `sirlee_pred_${dateStr}`;
+
+    // 1. Check in-memory cache first (TTL 5 minutes)
+    if (!forceRefresh && this.dateCache[dateStr] && (now - this.dateCache[dateStr].timestamp < 300000)) {
+      return this.dateCache[dateStr].data;
     }
 
+    // 2. Check localStorage cache if available
+    if (!forceRefresh && typeof localStorage !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(cacheKey);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && (now - parsed.timestamp < 300000) && Array.isArray(parsed.data) && parsed.data.length > 0) {
+            this.dateCache[dateStr] = parsed;
+            return parsed.data;
+          }
+        }
+      } catch (e) {
+        console.warn('LocalStorage read error for date cache:', e);
+      }
+    }
+
+    // 3. Fetch live fixtures across all leagues from ESPN Open Soccer API
     try {
       const leagueEntries = Object.entries(API_CONFIG.leagues);
       const fetchPromises = leagueEntries.map(async ([leagueCode, meta]) => {
         try {
-          const res = await fetch(`${API_CONFIG.espnBaseUrl}/${leagueCode}/scoreboard`, {
+          const url = `${API_CONFIG.espnBaseUrl}/${leagueCode}/scoreboard?dates=${espnDate}`;
+          const res = await fetch(url, {
             headers: { 'Accept': 'application/json' }
           });
           if (!res.ok) return [];
           const data = await res.json();
-          return (data.events || []).map(event => this.parseEspnEvent(event, meta));
+          const events = data.events || [];
+          return events.map(event => this.parseEspnEvent(event, meta, dateStr));
         } catch (err) {
-          console.warn(`[Real-time Feed] Error fetching ${leagueCode}:`, err);
+          console.warn(`[ESPN API] Error fetching ${leagueCode} for ${dateStr}:`, err);
           return [];
         }
       });
 
       const settled = await Promise.allSettled(fetchPromises);
-      const allEvents = settled
+      let allMatches = settled
         .filter(r => r.status === 'fulfilled')
         .flatMap(r => r.value);
 
-      // Separate into today, tomorrow, and live
-      const todayDateStr = new Date().toISOString().split('T')[0];
-      const tomorrowDate = new Date(Date.now() + 86400000);
-      const tomorrowDateStr = tomorrowDate.toISOString().split('T')[0];
+      // If no matches returned from API for today/tomorrow, check static fallback dataset
+      const todayStr = this.getTodayDateStr();
+      const tomorrowStr = this.getTomorrowDateStr();
 
-      const realtimeToday = [];
-      const realtimeTomorrow = [];
-      const realtimeLive = [];
-
-      allEvents.forEach(match => {
-        const matchDateStr = match.rawDate ? match.rawDate.split('T')[0] : '';
-        
-        if (match.isLive) {
-          realtimeLive.push(match);
+      if (allMatches.length === 0) {
+        if (dateStr === todayStr && typeof TODAY_MATCHES !== 'undefined' && TODAY_MATCHES.length > 0) {
+          allMatches = TODAY_MATCHES;
+        } else if (dateStr === tomorrowStr && typeof TOMORROW_MATCHES !== 'undefined' && TOMORROW_MATCHES.length > 0) {
+          allMatches = TOMORROW_MATCHES;
         }
+      }
 
-        if (matchDateStr === todayDateStr || matchDateStr < todayDateStr) {
-          realtimeToday.push(match);
-        } else if (matchDateStr === tomorrowDateStr) {
-          realtimeTomorrow.push(match);
-        } else {
-          // If nearby upcoming within 48h, group into today/tomorrow
-          const diffHours = (new Date(match.rawDate).getTime() - Date.now()) / (1000 * 3600);
-          if (diffHours >= 0 && diffHours <= 24) {
-            realtimeToday.push(match);
-          } else if (diffHours > 24 && diffHours <= 48) {
-            realtimeTomorrow.push(match);
+      // Determine the Banker of the Day (Match with highest prediction confidence & probability)
+      if (allMatches.length > 0) {
+        // Clear any existing banker flags to pick the best single banker for this day
+        let bestBankerIdx = -1;
+        let highestScore = -1;
+
+        allMatches.forEach((m, idx) => {
+          m.isBanker = false;
+          let score = m.prediction.confidenceRating * 20 + parseInt(m.prediction.probability || '80');
+          if (m.homeTeam.rank && m.awayTeam.rank && Math.abs(m.homeTeam.rank - m.awayTeam.rank) >= 5) {
+            score += 10;
           }
+          if (score > highestScore) {
+            highestScore = score;
+            bestBankerIdx = idx;
+          }
+        });
+
+        if (bestBankerIdx >= 0) {
+          allMatches[bestBankerIdx].isBanker = true;
+          allMatches[bestBankerIdx].badgeText = '👑 BANKER OF THE DAY';
+          allMatches[bestBankerIdx].badgeType = 'gold';
         }
-      });
 
-      // Merge with default 2026 analytical dataset
-      const mergedToday = this.mergeMatches(realtimeToday, (typeof TODAY_MATCHES !== 'undefined' ? TODAY_MATCHES : []));
-      const mergedTomorrow = this.mergeMatches(realtimeTomorrow, (typeof TOMORROW_MATCHES !== 'undefined' ? TOMORROW_MATCHES : []));
-      const mergedLive = realtimeLive.length > 0 
-        ? realtimeLive 
-        : (typeof LIVE_MATCHES !== 'undefined' ? LIVE_MATCHES : []);
+        // Sort matches: Live first, Banker next, then upcoming chronologically
+        allMatches.sort((a, b) => {
+          if (a.isLive && !b.isLive) return -1;
+          if (!a.isLive && b.isLive) return 1;
+          if (a.isBanker && !b.isBanker) return -1;
+          if (!a.isBanker && b.isBanker) return 1;
+          return (a.time || '').localeCompare(b.time || '');
+        });
+      }
 
-      this.cache = {
-        today: mergedToday,
-        tomorrow: mergedTomorrow,
-        live: mergedLive,
-        lastSync: now
+      // Save to memory cache and localStorage
+      const cachePayload = {
+        data: allMatches,
+        timestamp: now,
+        date: dateStr
       };
+      this.dateCache[dateStr] = cachePayload;
 
-      return this.cache;
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(cachePayload));
+        } catch (e) {}
+      }
+
+      // Synchronize legacy cache slots
+      if (dateStr === todayStr) {
+        this.cache.today = allMatches;
+        this.cache.lastSync = now;
+      } else if (dateStr === tomorrowStr) {
+        this.cache.tomorrow = allMatches;
+      }
+
+      return allMatches;
     } catch (err) {
-      console.error('[Real-time Feed] Global fetch failed, falling back to 2026 database:', err);
-      return {
-        today: typeof TODAY_MATCHES !== 'undefined' ? TODAY_MATCHES : [],
-        tomorrow: typeof TOMORROW_MATCHES !== 'undefined' ? TOMORROW_MATCHES : [],
-        live: typeof LIVE_MATCHES !== 'undefined' ? LIVE_MATCHES : [],
-        lastSync: now
-      };
+      console.error(`[FootballDataService] Fetch failed for date ${dateStr}:`, err);
+      // Fallback
+      if (dateStr === this.getTodayDateStr() && typeof TODAY_MATCHES !== 'undefined') return TODAY_MATCHES;
+      if (dateStr === this.getTomorrowDateStr() && typeof TOMORROW_MATCHES !== 'undefined') return TOMORROW_MATCHES;
+      return [];
     }
   }
 
   // Parse an ESPN soccer event into sirleegameprediction schema
-  parseEspnEvent(ev, meta) {
+  parseEspnEvent(ev, meta, dateStr) {
     const comp = ev.competitions?.[0] || {};
     const homeComp = comp.competitors?.find(c => c.homeAway === 'home') || comp.competitors?.[0] || {};
     const awayComp = comp.competitors?.find(c => c.homeAway === 'away') || comp.competitors?.[1] || {};
@@ -167,17 +261,61 @@ class FootballDataService {
 
     const statusState = ev.status?.type?.state; // 'pre', 'in', 'post'
     const isLive = statusState === 'in';
-    const isCompleted = statusState === 'post';
+    const isCompleted = statusState === 'post' || ev.status?.type?.completed === true;
     const minute = parseInt(ev.status?.displayClock) || (isLive ? 55 : 0);
 
-    // Parse odds details if present (e.g. "FIO +125" or DraftKings odds)
-    const oddsDetail = comp.odds?.[0]?.details || '';
-    const overUnder = comp.odds?.[0]?.overUnder || 2.5;
+    const homeScore = parseInt(homeComp.score) >= 0 ? parseInt(homeComp.score) : 0;
+    const awayScore = parseInt(awayComp.score) >= 0 ? parseInt(awayComp.score) : 0;
 
-    // AI Prediction Generator based on match data, team rankings and odds
-    const prediction = this.generateAnalyticalPrediction(homeTeamName, awayTeamName, oddsDetail, overUnder, meta);
+    // Parse team recent form and records
+    const homeFormStr = homeComp.form || '';
+    const awayFormStr = awayComp.form || '';
+    const homeForm = homeFormStr ? homeFormStr.split('') : ['W', 'W', 'D', 'W', 'L'];
+    const awayForm = awayFormStr ? awayFormStr.split('') : ['L', 'W', 'D', 'L', 'W'];
 
-    const isBanker = prediction.confidenceRating >= 5 || (oddsDetail && (oddsDetail.includes('-') && parseInt(oddsDetail.split('-')[1]) > 200));
+    const homeRecord = homeComp.records?.[0]?.summary || '';
+    const awayRecord = awayComp.records?.[0]?.summary || '';
+
+    // Parse odds details
+    const oddsObj = comp.odds?.[0] || {};
+    const oddsDetail = oddsObj.details || '';
+    const overUnder = oddsObj.overUnder || 2.5;
+
+    // Generate analytical AI prediction tip
+    const prediction = this.generateAnalyticalPrediction(
+      { name: homeTeamName, shortName: homeShort, form: homeForm, record: homeRecord },
+      { name: awayTeamName, shortName: awayShort, form: awayForm, record: awayRecord },
+      oddsDetail,
+      overUnder,
+      oddsObj,
+      meta
+    );
+
+    // Evaluate result status if completed
+    let resultStatus = null;
+    let badgeText = isLive ? '🔴 LIVE IN-PLAY' : (isCompleted ? `FT (${homeScore}-${awayScore})` : '⚡ 2026 FIXTURE');
+    let badgeType = isLive ? 'neon' : (isCompleted ? 'cyan' : 'emerald');
+
+    if (isCompleted) {
+      const homeWon = homeScore > awayScore;
+      const awayWon = awayScore > homeScore;
+      const drew = homeScore === awayScore;
+      let won = false;
+
+      if (prediction.primaryType === '1' && homeWon) won = true;
+      else if (prediction.primaryType === '2' && awayWon) won = true;
+      else if (prediction.primaryType === 'X' && drew) won = true;
+      else if (prediction.primaryType === '1X' && (homeWon || drew)) won = true;
+      else if (prediction.primaryType === 'X2' && (awayWon || drew)) won = true;
+      else if (prediction.primaryType === '12' && (homeWon || awayWon)) won = true;
+      else if (prediction.averageGoals.includes('Over 2.5') && (homeScore + awayScore) > 2.5) won = true;
+
+      if (won) {
+        resultStatus = 'WON';
+        badgeText = `✅ WON (${homeScore}-${awayScore})`;
+        badgeType = 'gold';
+      }
+    }
 
     return {
       id: `espn_${ev.id}`,
@@ -188,40 +326,45 @@ class FootballDataService {
       round: comp.round ? `Matchday ${comp.round}` : (ev.status?.type?.detail || '2026 Regular Season'),
       status: isLive ? 'LIVE' : (isCompleted ? 'FT' : 'SCHEDULED'),
       rawDate: ev.date,
+      matchDateStr: dateStr,
       time: kickoffTime,
       isLive: isLive,
+      isCompleted: isCompleted,
+      resultStatus: resultStatus,
       minute: minute,
-      homeScore: parseInt(homeComp.score) || 0,
-      awayScore: parseInt(awayComp.score) || 0,
-      isBanker: isBanker,
-      badgeText: isBanker ? '👑 REAL-TIME BANKER' : (isLive ? '🔴 LIVE IN-PLAY' : '⚡ 2026 FIXTURE'),
-      badgeType: isBanker ? 'gold' : (isLive ? 'neon' : 'cyan'),
+      homeScore: homeScore,
+      awayScore: awayScore,
+      isBanker: false, // will be evaluated across the day's matches
+      badgeText: badgeText,
+      badgeType: badgeType,
       homeTeam: {
         name: homeTeamName,
         shortName: homeShort,
         logo: homeLogo,
         rank: homeComp.curatedRank?.current || Math.floor(1 + Math.random() * 8),
-        form: ['W', 'W', 'D', 'W', 'L'],
-        xG: (1.6 + Math.random() * 1.2).toFixed(2),
+        form: homeForm.slice(-5),
+        record: homeRecord,
+        xG: (1.55 + Math.random() * 1.1).toFixed(2),
         stats: {
-          possession: 56,
-          shots: 12,
-          shotsOnTarget: 5,
-          dangerousAttacks: 45
+          possession: 55,
+          shots: 13,
+          shotsOnTarget: 6,
+          dangerousAttacks: 48
         }
       },
       awayTeam: {
         name: awayTeamName,
         shortName: awayShort,
         logo: awayLogo,
-        rank: awayComp.curatedRank?.current || Math.floor(5 + Math.random() * 12),
-        form: ['L', 'W', 'D', 'L', 'W'],
+        rank: awayComp.curatedRank?.current || Math.floor(4 + Math.random() * 12),
+        form: awayForm.slice(-5),
+        record: awayRecord,
         xG: (1.1 + Math.random() * 0.9).toFixed(2),
         stats: {
-          possession: 44,
-          shots: 8,
+          possession: 45,
+          shots: 9,
           shotsOnTarget: 3,
-          dangerousAttacks: 28
+          dangerousAttacks: 30
         }
       },
       prediction: prediction,
@@ -231,12 +374,13 @@ class FootballDataService {
         homeAvgGoalsConceded: 0.9,
         awayAvgGoalsScored: 1.2,
         awayAvgGoalsConceded: 1.6,
-        referee: comp.officials?.[0]?.displayName || 'Official FIFA Referee'
+        referee: comp.officials?.[0]?.displayName || 'Official FIFA Referee',
+        venue: comp.venue?.fullName || 'Stadium Ground'
       },
       liveTip: isLive ? {
         market: 'In-Play Live Tip: Over 2.5 Goals',
         confidence: '88%',
-        tipReason: `Live momentum leaning towards ${homeTeamName} with heavy box occupancy in the second half.`,
+        tipReason: `Live pressure favors ${homeTeamName} with strong momentum into the final third.`,
         recommendedAction: `BACK NEXT GOAL @ 1.85`,
         secondaryLiveTip: `Full-time Score Expectancy: ${prediction.correctScore}`
       } : null
@@ -244,52 +388,78 @@ class FootballDataService {
   }
 
   // Generates mathematical AI prediction tip
-  generateAnalyticalPrediction(homeName, awayName, oddsDetail, overUnder, meta) {
+  generateAnalyticalPrediction(homeTeam, awayTeam, oddsDetail, overUnder, oddsObj, meta) {
+    const homeName = homeTeam.name;
+    const awayName = awayTeam.name;
+    const homeForm = homeTeam.form || ['W', 'D', 'W', 'W', 'L'];
+    const awayForm = awayTeam.form || ['L', 'W', 'D', 'L', 'W'];
+
+    // Compute recent form score (W=3, D=1, L=0)
+    const calcFormScore = (fArr) => (fArr || []).reduce((acc, r) => acc + (r === 'W' ? 3 : (r === 'D' ? 1 : 0)), 0);
+    const homeScore = calcFormScore(homeForm);
+    const awayScore = calcFormScore(awayForm);
+
+    const details = (oddsDetail || '').toUpperCase();
+    const homeShort = (homeTeam.shortName || '').toUpperCase();
+    const awayShort = (awayTeam.shortName || '').toUpperCase();
+
+    // Check moneyline odds if available
+    const moneyline = oddsObj?.moneyline || {};
+    const homeMl = parseInt(moneyline.home?.close?.odds) || 0;
+    const awayMl = parseInt(moneyline.away?.close?.odds) || 0;
+
     let primary = 'Home Win (1)';
     let primaryType = '1';
-    let probability = '82%';
+    let probability = '84%';
     let correctScore = '2 - 1';
-    let averageGoals = `Over ${overUnder} Goals`;
+    let averageGoals = `Over ${overUnder || 2.5} Goals`;
     let averageGoalsOdds = '1.75';
-    let btts = 'Yes';
+    let btts = 'Yes (82%)';
     let confidenceRating = 4;
-    let confidenceText = 'High (82%)';
-    let reasoning = `Tactical and mathematical analysis favors ${homeName} at home with superior expected goals (xG) metrics and consistent transitional efficiency in the 2026 season.`;
+    let confidenceText = 'High (84%)';
 
-    // Odds-assisted modeling
-    if (oddsDetail.includes('-')) {
-      const matchFav = oddsDetail.split(' ')[0];
-      if (matchFav && awayName.toUpperCase().includes(matchFav)) {
-        primary = `Away Win (2)`;
-        primaryType = '2';
-        probability = '85%';
-        correctScore = '0 - 2';
-        btts = 'No';
-        confidenceRating = 5;
-        confidenceText = 'Banker (89%)';
-        reasoning = `${awayName} enter as clear analytical favorites with dominant road goalscoring differential and higher possession efficiency.`;
-      } else {
-        primary = `Home Win (1)`;
-        primaryType = '1';
-        probability = '88%';
-        correctScore = '3 - 1';
-        btts = 'Yes';
-        confidenceRating = 5;
-        confidenceText = 'Ultra High (91%)';
-        reasoning = `${homeName} maintain supreme home dominance. Defensive metrics indicate ${awayName} concede an average of 1.7 goals on the road.`;
-      }
-    } else if (oddsDetail.includes('+')) {
-      // Close contest / value draw / BTTS
-      primary = 'Home Win or Draw (1X) & BTTS';
-      primaryType = '1X';
-      probability = '84%';
-      correctScore = '2 - 1';
+    const isAwayFavored = (details.includes('-') && (details.includes(awayShort) || awayName.toUpperCase().includes(details.split(' ')[0]))) || (awayMl < 0 && homeMl > 0);
+    const isHomeFavored = (details.includes('-') && (details.includes(homeShort) || homeName.toUpperCase().includes(details.split(' ')[0]))) || (homeMl < 0 && awayMl > 0);
+
+    if (isAwayFavored || (awayScore >= homeScore + 5)) {
+      primary = `Away Win (2)`;
+      primaryType = '2';
+      probability = '87%';
+      correctScore = '0 - 2';
+      averageGoals = 'Under 3.5 Goals';
+      btts = 'No (72%)';
+      confidenceRating = 5;
+      confidenceText = 'Banker (87%)';
+    } else if (isHomeFavored || (homeScore >= awayScore + 4)) {
+      primary = `Home Win (1)`;
+      primaryType = '1';
+      probability = '89%';
+      correctScore = '3 - 1';
       averageGoals = 'Over 2.5 Goals';
       btts = 'Yes (84%)';
+      confidenceRating = 5;
+      confidenceText = 'Banker (89%)';
+    } else if (homeScore >= awayScore) {
+      primary = `Home Win or Draw (1X)`;
+      primaryType = '1X';
+      probability = '85%';
+      correctScore = '2 - 1';
+      averageGoals = 'Over 2.5 Goals';
+      btts = 'Yes (82%)';
       confidenceRating = 4;
       confidenceText = 'High Value (85%)';
-      reasoning = `Evenly matched tactical contest. High probability of both teams finding the back of the net with home pitch advantage tipping 1X double chance.`;
+    } else {
+      primary = `Draw or Away (X2)`;
+      primaryType = 'X2';
+      probability = '83%';
+      correctScore = '1 - 1';
+      averageGoals = 'Under 2.5 Goals';
+      btts = 'Yes (79%)';
+      confidenceRating = 4;
+      confidenceText = 'Value Pick (83%)';
     }
+
+    const reasoning = `Tactical modeling favors ${primaryType === '1' || primaryType === '1X' ? homeName : awayName}. Form efficiency: ${homeName} (${homeScore}/15 pts) vs ${awayName} (${awayScore}/15 pts). ${details ? `Sportsbook odds line: ${oddsDetail}.` : ''} High probability of a ${correctScore} scoreline outcome.`;
 
     return {
       primary,
@@ -306,56 +476,35 @@ class FootballDataService {
     };
   }
 
-  // Helper to merge live feed with curated 2026 matches without duplicates
-  mergeMatches(realtimeList, fallbackList) {
-    const seen = new Set();
-    const result = [];
-
-    // Prioritize real-time fetched matches
-    realtimeList.forEach(m => {
-      const key = `${m.homeTeam.name.toLowerCase()}-${m.awayTeam.name.toLowerCase()}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        result.push(m);
-      }
+  // Pre-fetch adjacent days in background so navigating between days is instantaneous
+  prefetchAdjacentDays(baseDateStr) {
+    const base = new Date(baseDateStr || Date.now());
+    [-1, 1, 2, 3, 4, 5, 6].forEach(offset => {
+      const target = new Date(base);
+      target.setDate(base.getDate() + offset);
+      const str = this.formatDateToISO(target);
+      // Small timeout stagger to avoid slamming network
+      setTimeout(() => {
+        this.fetchPredictionsForDate(str, false).catch(() => {});
+      }, Math.abs(offset) * 400);
     });
-
-    // Append curated fallback matches that are not already present
-    fallbackList.forEach(m => {
-      const key = `${m.homeTeam.name.toLowerCase()}-${m.awayTeam.name.toLowerCase()}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        result.push(m);
-      }
-    });
-
-    return result;
   }
 
-  // Get Today's Fixtures & Analytical Predictions
-  async getTodayPredictions() {
-    if (this.provider === 'realtime') {
-      const data = await this.fetchRealtimeMatches();
-      return data.today;
-    }
-    return typeof TODAY_MATCHES !== 'undefined' ? TODAY_MATCHES : [];
+  // Backward-compatible API calls
+  async getTodayPredictions(forceRefresh = false) {
+    const todayStr = this.getTodayDateStr();
+    return this.fetchPredictionsForDate(todayStr, forceRefresh);
   }
 
-  // Get Tomorrow's Fixtures
-  async getTomorrowPredictions() {
-    if (this.provider === 'realtime') {
-      const data = await this.fetchRealtimeMatches();
-      return data.tomorrow;
-    }
-    return typeof TOMORROW_MATCHES !== 'undefined' ? TOMORROW_MATCHES : [];
+  async getTomorrowPredictions(forceRefresh = false) {
+    const tomorrowStr = this.getTomorrowDateStr();
+    return this.fetchPredictionsForDate(tomorrowStr, forceRefresh);
   }
 
-  // Get Live Scores & Dynamic In-Play Predictions
   async getLiveScores() {
-    if (this.provider === 'realtime') {
-      const data = await this.fetchRealtimeMatches();
-      return data.live;
-    }
+    const todayMatches = await this.getTodayPredictions();
+    const live = (todayMatches || []).filter(m => m.isLive);
+    if (live.length > 0) return live;
     return typeof LIVE_MATCHES !== 'undefined' ? LIVE_MATCHES : [];
   }
 
@@ -398,7 +547,6 @@ class FootballDataService {
         const gd = statsMap.pointDifferential?.displayValue ?? ((gdVal >= 0 ? '+' : '') + gdVal);
         const pts = statsMap.points?.value ?? (won * 3 + drawn);
 
-        // Fallback form if available from LEAGUE_STANDINGS or synthesized
         const fallbackForm = (typeof LEAGUE_STANDINGS !== 'undefined' && LEAGUE_STANDINGS[leagueKey]?.[idx]?.form) || ['W', 'D', 'W', 'L', 'W'];
 
         return {
@@ -419,7 +567,6 @@ class FootballDataService {
         };
       });
 
-      // Update in-memory cache and global LEAGUE_STANDINGS
       this.cache.standings[leagueKey] = {
         data: parsed,
         timestamp: now

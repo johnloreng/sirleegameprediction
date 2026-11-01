@@ -217,3 +217,18 @@ h1, h2, h3, h4, .font-heading {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
   animation: shimmer 2.5s infinite;
 }
+
+/* Matchday Day Pill Active Glow */
+.active-day-pill {
+  background: linear-gradient(135deg, rgba(0, 255, 135, 0.22) 0%, rgba(56, 189, 248, 0.18) 100%) !important;
+  color: #00FF87 !important;
+  border-color: #00FF87 !important;
+  box-shadow: 0 4px 16px rgba(0, 255, 135, 0.25);
+}
+
+/* Date picker calendar input styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+

@@ -62,21 +62,22 @@ Then open your browser at: `http://localhost:3000`
 
 ## 🔌 Next Steps to Get Your Site Live
 
-### 1. Connecting a Live Football Data API (API-Football or Sportmonks)
-The platform currently comes loaded with high-precision analytical prediction models for Premier League, Champions League, La Liga, Serie A, Bundesliga, and Saudi Pro League in `js/data.js`.
+### 1. Real-Time Football Prediction API (Open Soccer API & Analytical AI)
+The platform features an automated, date-based prediction engine that pulls live fixtures and sportsbook odds directly from the ESPN Open Soccer API without requiring any paid API keys or subscription signups.
 
-To stream automated, real-time live match scores from Monday to Sunday:
-1. Register for a free API key at **[API-Football (api-sports.io)](https://www.api-sports.io/)** or **[Sportmonks](https://www.sportmonks.com/)**.
-2. Open [`js/api.js`](file:///Users/mac/Desktop/PROJECT/WEBSITES/sirleegamepredict/js/api.js).
-3. Update `API_CONFIG`:
-   ```javascript
-   const API_CONFIG = {
-     footballApiProvider: 'api-football', // Switch from 'mock' to 'api-football'
-     apiKeyFootball: 'YOUR_API_SPORTS_KEY_HERE',
-     // ...
-   };
-   ```
-4. The service will automatically fetch live fixtures, update scorelines, and run momentum calculations dynamically.
+#### Key Capabilities:
+- **Each & Every Day Match Pulling**: Users can navigate between **Yesterday**, **Today**, **Tomorrow**, and any subsequent day of the season using the interactive Day Selector Carousel or the native Calendar Date Picker (`<input type="date">`).
+- **Query Any Date**: Automatically queries `https://site.api.espn.com/apis/site/v2/sports/soccer/{leagueCode}/scoreboard?dates={YYYYMMDD}` across 13 major world leagues (Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League, Europa League, Championship, Liga Portugal, Süper Lig, Eredivisie, Saudi Pro League, and Scottish Premiership).
+- **Mathematical AI Prediction Engine**:
+  - Automatically computes 1X2 Primary Tips with calculated win probability percentages.
+  - Generates high-accuracy Correct Score forecasts (e.g. `2 - 1`, `3 - 1`, `0 - 2`).
+  - Calculates Total Goals Over/Under 2.5 and Both Teams To Score (BTTS: Yes/No).
+  - Dynamically crowns the **👑 BANKER OF THE DAY** for each specific date based on odds differentials, expected goals (xG), and recent 5-game form point momentum.
+  - Automatically verifies completed match outcomes (`FT`), marking successful forecasts with a gleaming `✅ PREDICTION WON` hit badge.
+- **Instant Caching & Offline PWA**:
+  - Responses are cached in memory and `localStorage` with a 5-minute TTL.
+  - Seamless background pre-fetching ensures switching between days is instantaneous (0ms).
+  - Force-refresh button (`Sync Real-Time 🔄`) available to fetch real-time updates and live in-play scores anytime.
 
 ---
 

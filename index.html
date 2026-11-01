@@ -396,6 +396,57 @@
       </button>
     </nav>
 
+    <!-- Matchday Calendar & Daily Date Navigator Strip -->
+    <div id="matchday-navigator-card" class="mb-5 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-900/90 via-[#0B101D] to-slate-900/90 border border-emerald-500/25 backdrop-blur shadow-lg">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/5">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <span>📅</span> Pull Predictions For:
+          </span>
+          <span id="active-day-badge" class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-mono font-bold flex items-center gap-1.5 shadow-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="active-day-label">Sunday, Nov 1 (Today)</span>
+          </span>
+          <span id="active-day-match-count" class="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-full border border-white/5">
+            Loading API...
+          </span>
+        </div>
+
+        <!-- Day Controls: Prev / Next / Any Date Picker -->
+        <div class="flex items-center gap-1.5 self-end sm:self-auto">
+          <button 
+            id="btn-prev-day" 
+            type="button" 
+            class="px-2.5 py-1 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold border border-white/10 transition flex items-center gap-1 active:scale-95 shadow-sm" 
+            title="View Previous Day Predictions"
+          >
+            <span>‹</span> <span>Prev</span>
+          </button>
+          
+          <button 
+            id="btn-next-day" 
+            type="button" 
+            class="px-2.5 py-1 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold border border-white/10 transition flex items-center gap-1 active:scale-95 shadow-sm" 
+            title="View Next Day Predictions"
+          >
+            <span>Next</span> <span>›</span>
+          </button>
+
+          <!-- Native Calendar Date Picker for picking ANY day of the season -->
+          <label class="relative cursor-pointer inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 text-xs font-bold transition shadow-sm active:scale-95" title="Pick any date from calendar">
+            <span>🗓️</span>
+            <span>Pick Date</span>
+            <input type="date" id="calendar-date-input" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+          </label>
+        </div>
+      </div>
+
+      <!-- Horizontal Day Pills Carousel (Yesterday, Today, Tomorrow, +2d, +3d, +4d, +5d, +6d, +7d) -->
+      <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar pt-2.5" id="day-pills-carousel">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </div>
+
     <!-- Filters & Search Toolbar -->
     <div class="space-y-3 mb-6">
       
@@ -426,13 +477,13 @@
 
     </div>
 
-    <!-- VIEW 1: TODAY'S PREDICTIONS -->
+    <!-- VIEW 1: TODAY'S PREDICTIONS (DYNAMIC FOR ACTIVE MATCHDAY) -->
     <section id="section-today" class="space-y-4">
       <div class="flex items-center justify-between text-xs text-slate-400 px-1">
         <h2 class="font-bold text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
-          <span>🏆</span> Today's Match Predictions & Analytical Banker Cards
+          <span>🏆</span> <span id="prediction-section-title">Today's Match Predictions & Analytical Banker Cards</span>
         </h2>
-        <span>Sorted Chronologically</span>
+        <span id="prediction-section-meta" class="text-emerald-400 font-mono text-[11px]">Real-Time API Feed</span>
       </div>
       <div id="today-matches-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Populated dynamically by app.js -->
