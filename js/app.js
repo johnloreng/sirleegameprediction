@@ -1,5 +1,5 @@
 // app.js - Main Application Controller for sirleegameprediction
-// Dynamic Real-Time Date-Based Football Predictions, PWA Controller, Navigation, and Modals
+// Dynamic Real-Time Date Predictions, Results Verification, Archiving & Client Referral Engine
 
 document.addEventListener('DOMContentLoaded', () => {
   // Application State
@@ -18,7 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
     currentStandingsData: [],
     currentMatches: [],
     isLoadingMatches: false,
-    liveTimerInterval: null
+    liveTimerInterval: null,
+    // Archive & Referral State
+    archiveFilterOutcome: 'all', // 'all' | 'won' | 'lost' | 'banker' | 'exact'
+    archiveFilterLeague: 'all',
+    archiveSearchQuery: '',
+    archivedMatches: []
   };
 
   // DOM Elements
@@ -29,11 +34,24 @@ document.addEventListener('DOMContentLoaded', () => {
       tomorrow: document.getElementById('section-tomorrow'),
       live: document.getElementById('section-live'),
       stats: document.getElementById('section-stats'),
+      archive: document.getElementById('section-archive'),
       premium: document.getElementById('section-premium')
     },
     todayContainer: document.getElementById('today-matches-list'),
     tomorrowContainer: document.getElementById('tomorrow-matches-list'),
     liveContainer: document.getElementById('live-matches-list'),
+    archiveMatchesList: document.getElementById('archive-matches-list'),
+    archiveCountBadge: document.getElementById('archive-count-badge'),
+    archiveOutcomePills: document.getElementById('archive-outcome-pills'),
+    archiveSearchInput: document.getElementById('archive-search-input'),
+    archiveFilterCountBadge: document.getElementById('archive-filter-count-badge'),
+    archiveStatWinrate: document.getElementById('archive-stat-winrate'),
+    archiveStatBankerrate: document.getElementById('archive-stat-bankerrate'),
+    archiveStatTotal: document.getElementById('archive-stat-total'),
+    archiveStatExact: document.getElementById('archive-stat-exact'),
+    btnCopyReferralSlip: document.getElementById('btn-copy-referral-slip'),
+    btnShareWhatsappProof: document.getElementById('btn-share-whatsapp-proof'),
+    btnEmailProof: document.getElementById('btn-email-proof'),
     leaguePillsContainer: document.getElementById('league-pills'),
     marketPillsContainer: document.getElementById('market-pills'),
     dayPillsCarousel: document.getElementById('day-pills-carousel'),
@@ -87,20 +105,20 @@ document.addEventListener('DOMContentLoaded', () => {
     setupNavigationListeners();
     setupContactForm();
     setupStandingsView();
+    setupArchiveView();
     setupNetworkListeners();
     setupRealtimeSync();
 
-    // Set initial date in calendar input
     if (els.calendarDateInput) {
       els.calendarDateInput.value = state.selectedDate;
     }
 
-    // Load predictions for today
+    // Load initial matches for today
     loadPredictionsForActiveDate();
     startLiveScoreSimulation();
     updateHeaderDate();
 
-    // Pre-fetch adjacent days in the background
+    // Pre-fetch adjacent days in background
     if (window.FootballDataService && typeof window.FootballDataService.prefetchAdjacentDays === 'function') {
       window.FootballDataService.prefetchAdjacentDays(state.selectedDate);
     }
@@ -193,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         switchTab('today', false);
         return;
       }
-      if (['today', 'tomorrow', 'live', 'stats', 'premium'].includes(hash)) {
+      if (['today', 'tomorrow', 'live', 'stats', 'archive', 'premium'].includes(hash)) {
         switchTab(hash, false);
       }
     };
@@ -239,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // If switching to live tab, refresh live view
+    // Tab-specific Actions
     if (tabId === 'live' && window.FootballDataService) {
       window.FootballDataService.getLiveScores().then(liveMatches => {
         window._LIVE_CACHE = liveMatches;
@@ -248,7 +266,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Scroll smoothly to top of main predictions area
+    if (tabId === 'archive') {
+      renderArchiveView();
+    }
+
+    // Scroll smoothly to view
     if (tabId === 'today' || tabId === 'tomorrow') {
       const navCard = document.getElementById('matchday-navigator-card');
       if (navCard) {
@@ -322,8 +344,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDayPills();
     updateDateLabels(normalized);
 
-    // If currently on stats or premium tab, switch to predictions view
-    if (state.currentTab === 'stats' || state.currentTab === 'premium' || state.currentTab === 'live') {
+    // If currently on stats, archive, or premium, switch to predictions view
+    if (state.currentTab === 'stats' || state.currentTab === 'premium' || state.currentTab === 'live' || state.currentTab === 'archive') {
       const todayStr = window.FootballDataService ? window.FootballDataService.getTodayDateStr() : getOffsetDateStr(0);
       const tomorrowStr = window.FootballDataService ? window.FootballDataService.getTomorrowDateStr() : getOffsetDateStr(1);
       if (normalized === tomorrowStr) {
@@ -371,9 +393,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderDayPills() {
     if (!els.dayPillsCarousel) return;
 
-    const todayStr = window.FootballDataService ? window.FootballDataService.getTodayDateStr() : getOffsetDateStr(0);
-    const tomorrowStr = window.FootballDataService ? window.FootballDataService.getTomorrowDateStr() : getOffsetDateStr(1);
-
     // Build list of 9 dynamic days: -1, 0, 1, 2, 3, 4, 5, 6, 7
     const days = [];
     for (let i = -1; i <= 7; i++) {
@@ -405,7 +424,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // If selected date is outside of -1 to +7, prepend/append a custom pill
     const isPresent = days.some(d => d.dateStr === state.selectedDate);
     if (!isPresent) {
       const parts = state.selectedDate.split('-');
@@ -450,7 +468,6 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
 
-    // Attach click handlers
     els.dayPillsCarousel.querySelectorAll('[data-day-pill]').forEach(btn => {
       btn.addEventListener('click', () => {
         const dateStr = btn.getAttribute('data-day-pill');
@@ -545,7 +562,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 7. Navigation Listeners
   function setupNavigationListeners() {
-    // Structural Tabs
     els.tabs.forEach(tab => {
       tab.addEventListener('click', (e) => {
         e.preventDefault();
@@ -561,7 +577,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Mobile Bottom Nav
     els.bottomNavItems.forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
@@ -586,7 +601,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     state.isLoadingMatches = true;
 
-    // Show skeleton loading state
     renderSkeletonLoader(els.todayContainer);
     if (els.activeDayMatchCount) {
       els.activeDayMatchCount.textContent = 'Pulling from API...';
@@ -604,17 +618,14 @@ document.addEventListener('DOMContentLoaded', () => {
         window._TOMORROW_CACHE = state.currentMatches;
       }
 
-      // Check live matches
       const liveMatches = (dateStr === todayStr) 
         ? state.currentMatches.filter(m => m.isLive) 
         : [];
       if (els.liveCountBadge) els.liveCountBadge.textContent = liveMatches.length;
 
-      // Update Hero Banker card with the top Banker for this day
       updateHeroBankerCard(state.currentMatches, dateStr);
       updateLastSyncTimestamp();
 
-      // Update date match badge
       if (els.activeDayMatchCount) {
         els.activeDayMatchCount.textContent = `${state.currentMatches.length} Matches Pulled via API`;
       }
@@ -622,7 +633,9 @@ document.addEventListener('DOMContentLoaded', () => {
       renderDayPills();
       filterAndRenderMatches();
 
-      // Background pre-fetch adjacent days
+      // Automatically sync archive stats
+      updateArchiveKPIs();
+
       if (window.FootballDataService && typeof window.FootballDataService.prefetchAdjacentDays === 'function') {
         window.FootballDataService.prefetchAdjacentDays(dateStr);
       }
@@ -731,6 +744,9 @@ document.addEventListener('DOMContentLoaded', () => {
       syncBtn.disabled = true;
       try {
         await loadPredictionsForActiveDate(true);
+        if (state.currentTab === 'archive') {
+          renderArchiveView();
+        }
       } catch (err) {
         console.error('Manual sync error:', err);
       } finally {
@@ -750,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 9. Match Card Rendering & Filtering
+  // 9. Match Card Rendering & Filtering (With Full Results & Verification Breakdown)
   function filterAndRenderMatches() {
     const filtered = (state.currentMatches || []).filter(matchFilter);
     renderMatchList(filtered, els.todayContainer);
@@ -760,17 +776,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function matchFilter(m) {
-    // League Filter
     if (state.selectedLeague !== 'all' && m.leagueId !== state.selectedLeague) {
       return false;
     }
-    // Search Query Filter
     if (state.searchQuery) {
       const q = state.searchQuery;
       const matchText = `${m.homeTeam.name} ${m.awayTeam.name} ${m.leagueName} ${m.prediction.primary} ${m.prediction.correctScore}`.toLowerCase();
       if (!matchText.includes(q)) return false;
     }
-    // Market Filter
     if (state.selectedMarket !== 'all') {
       if (state.selectedMarket === '1x2' && !['1', '2', 'X', '1X', 'X2', '12'].includes(m.prediction.primaryType)) return false;
       if (state.selectedMarket === 'goals' && !m.prediction.averageGoals.toLowerCase().includes('over')) return false;
@@ -825,7 +838,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     container.innerHTML = matches.map(match => createMatchCardHTML(match)).join('');
 
-    // Attach card event listeners
     container.querySelectorAll('[data-match-detail-id]').forEach(btn => {
       btn.addEventListener('click', () => {
         const matchId = btn.getAttribute('data-match-detail-id');
@@ -841,13 +853,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Generates Rich Match Card with Comparative Full Result Verification
   function createMatchCardHTML(m) {
-    const badgeColor = m.badgeType === 'gold' 
-      ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' 
-      : m.badgeType === 'neon'
+    const isCompleted = m.isCompleted || m.status === 'FT';
+    const isExact = m.evaluation && m.evaluation.isExactScore;
+    const isWon = m.resultStatus === 'WON' || (m.evaluation && m.evaluation.primaryWon);
+    const isLost = m.resultStatus === 'LOST' || (isCompleted && !isWon);
+
+    let cardBorder = m.isBanker ? 'border-amber-500/40 bg-gradient-to-b from-[#141B2D] via-[#101726] to-[#0E131F]' : 'border-white/5';
+    if (isCompleted) {
+      if (isExact) cardBorder = 'border-amber-500/50 glow-exact-card bg-gradient-to-b from-[#1A1F2C] via-[#0E131F] to-[#07090E]';
+      else if (isWon) cardBorder = 'border-emerald-500/40 bg-gradient-to-b from-[#0F1E1A] via-[#0E131F] to-[#07090E]';
+      else if (isLost) cardBorder = 'border-red-500/30 bg-gradient-to-b from-[#1E1114] via-[#0E131F] to-[#07090E]';
+    }
+
+    const badgeColor = m.badgeType === 'gold' || isExact
+      ? 'bg-amber-500/15 text-amber-300 border-amber-500/40' 
+      : (m.badgeType === 'neon' || m.isLive)
       ? 'bg-red-500/15 text-red-300 border-red-500/30'
-      : m.badgeType === 'cyan'
-      ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+      : (m.badgeType === 'red' || isLost)
+      ? 'bg-red-500/15 text-red-400 border-red-500/30'
       : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
 
     const formBadgesHome = (m.homeTeam.form || []).map(f => `
@@ -868,13 +893,113 @@ document.addEventListener('DOMContentLoaded', () => {
     if (m.isLive) {
       timeBadgeText = `🔴 LIVE ${m.minute}'`;
       timeBadgeClass = 'text-red-400 bg-red-950/50 border-red-500/40 animate-pulse';
-    } else if (m.isCompleted) {
+    } else if (isCompleted) {
       timeBadgeText = `FT (${m.homeScore}-${m.awayScore})`;
-      timeBadgeClass = 'text-slate-300 bg-slate-800/80 border-slate-700/60';
+      timeBadgeClass = isWon 
+        ? 'text-emerald-300 bg-emerald-950/60 border-emerald-500/30 font-bold' 
+        : 'text-red-300 bg-red-950/60 border-red-500/30 font-bold';
+    }
+
+    // Top Result Verification Banner for Completed Games
+    let resultBannerHTML = '';
+    if (isCompleted) {
+      if (isExact) {
+        resultBannerHTML = `
+          <div class="mb-3 p-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-950/40 to-slate-900 border border-amber-500/40 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🎯</span>
+              <div>
+                <span class="font-extrabold text-amber-300 block">EXACT SCORE HIT: ${m.homeScore} - ${m.awayScore}</span>
+                <span class="text-[10px] text-slate-300">100% Analytical Forecast Accuracy</span>
+              </div>
+            </div>
+            <span class="font-mono font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/40 text-[10px]">VERIFIED WIN</span>
+          </div>
+        `;
+      } else if (isWon) {
+        resultBannerHTML = `
+          <div class="mb-3 p-2.5 rounded-xl bg-gradient-to-r from-emerald-500/20 via-emerald-950/40 to-slate-900 border border-emerald-500/40 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="text-base">✅</span>
+              <div>
+                <span class="font-extrabold text-emerald-300 block">PREDICTION WON: ${m.prediction.primary}</span>
+                <span class="text-[10px] text-slate-300">Final Full Time Result: ${m.homeScore} - ${m.awayScore}</span>
+              </div>
+            </div>
+            <span class="font-mono font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40 text-[10px]">VERIFIED WIN</span>
+          </div>
+        `;
+      } else {
+        resultBannerHTML = `
+          <div class="mb-3 p-2.5 rounded-xl bg-gradient-to-r from-red-500/20 via-red-950/40 to-slate-900 border border-red-500/30 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="text-base">❌</span>
+              <div>
+                <span class="font-bold text-red-300 block">PREDICTION MISSED</span>
+                <span class="text-[10px] text-slate-400">Predicted: ${m.prediction.primary} • Final: ${m.homeScore} - ${m.awayScore}</span>
+              </div>
+            </div>
+            <span class="font-mono font-bold text-red-300 bg-red-500/20 px-2 py-0.5 rounded-full border border-red-500/40 text-[10px]">AUDITED LOSS</span>
+          </div>
+        `;
+      }
+    }
+
+    // Comparative Market Verification Box for Finished Games
+    let comparativeMarketsHTML = '';
+    if (isCompleted && m.evaluation) {
+      comparativeMarketsHTML = `
+        <div class="mt-3 pt-2.5 border-t border-white/5 space-y-2">
+          <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Audited Markets Comparison (Predicted vs Actual)</span>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+            
+            <!-- 1X2 Outcome -->
+            <div class="p-2 rounded-lg ${m.evaluation.primaryWon ? 'bg-emerald-950/40 border border-emerald-500/30' : 'bg-red-950/30 border border-red-500/20'}">
+              <span class="text-[10px] text-slate-400 block">1X2 Outcome</span>
+              <span class="font-bold text-white text-[11px] block truncate">${m.prediction.primaryType}</span>
+              <span class="text-[10px] font-mono mt-0.5 block ${m.evaluation.primaryWon ? 'text-emerald-400 font-bold' : 'text-red-400'}">
+                ${m.evaluation.primaryWon ? '✓ WON' : '✕ MISSED'}
+              </span>
+            </div>
+
+            <!-- Correct Score -->
+            <div class="p-2 rounded-lg ${m.evaluation.isExactScore ? 'bg-amber-950/40 border border-amber-500/40' : 'bg-slate-900/60 border border-slate-800'}">
+              <span class="text-[10px] text-slate-400 block">Correct Score</span>
+              <span class="font-mono font-bold ${m.evaluation.isExactScore ? 'text-amber-400' : 'text-slate-300'} text-[11px] block">${m.prediction.correctScore}</span>
+              <span class="text-[10px] font-mono mt-0.5 block ${m.evaluation.isExactScore ? 'text-amber-400 font-bold' : 'text-slate-500'}">
+                ${m.evaluation.isExactScore ? '🎯 EXACT' : `FT ${m.homeScore}-${m.awayScore}`}
+              </span>
+            </div>
+
+            <!-- Over/Under Goals -->
+            <div class="p-2 rounded-lg ${m.evaluation.goalsWon ? 'bg-emerald-950/40 border border-emerald-500/30' : 'bg-red-950/30 border border-red-500/20'}">
+              <span class="text-[10px] text-slate-400 block">Total Goals</span>
+              <span class="font-bold text-white text-[11px] block truncate">${m.prediction.averageGoals.replace(' Goals', '')}</span>
+              <span class="text-[10px] font-mono mt-0.5 block ${m.evaluation.goalsWon ? 'text-emerald-400 font-bold' : 'text-red-400'}">
+                ${m.evaluation.goalsWon ? `✓ WON (${m.evaluation.totalGoals})` : `✕ ${m.evaluation.totalGoals}G`}
+              </span>
+            </div>
+
+            <!-- BTTS -->
+            <div class="p-2 rounded-lg ${m.evaluation.bttsWon ? 'bg-emerald-950/40 border border-emerald-500/30' : 'bg-red-950/30 border border-red-500/20'}">
+              <span class="text-[10px] text-slate-400 block">Both Teams Score</span>
+              <span class="font-bold text-white text-[11px] block">${m.prediction.btts}</span>
+              <span class="text-[10px] font-mono mt-0.5 block ${m.evaluation.bttsWon ? 'text-emerald-400 font-bold' : 'text-red-400'}">
+                ${m.evaluation.bttsWon ? '✓ WON' : '✕ MISSED'}
+              </span>
+            </div>
+
+          </div>
+        </div>
+      `;
     }
 
     return `
-      <article class="glass-card rounded-2xl p-4 md:p-5 relative overflow-hidden transition-all duration-300 hover:border-emerald-500/40 ${m.isBanker ? 'border-amber-500/40 bg-gradient-to-b from-[#141B2D] via-[#101726] to-[#0E131F]' : ''}">
+      <article class="glass-card rounded-2xl p-4 md:p-5 relative overflow-hidden transition-all duration-300 hover:border-emerald-500/40 ${cardBorder}">
+        
+        <!-- Result Banner if completed -->
+        ${resultBannerHTML}
+
         <!-- Card Top Bar: League & Badge -->
         <div class="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-white/5 text-xs">
           <div class="flex items-center gap-1.5 font-medium text-slate-300 truncate">
@@ -909,11 +1034,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <!-- VS / Score Center -->
           <div class="col-span-2 flex flex-col items-center justify-center text-center">
-            ${(m.isLive || m.isCompleted) ? `
+            ${(m.isLive || isCompleted) ? `
               <div class="text-xl md:text-2xl font-mono font-extrabold text-white bg-slate-900/90 px-2.5 py-1 rounded-xl border border-white/10 shadow-inner">
-                <span>${m.homeScore}</span><span class="text-emerald-400">-</span><span>${m.awayScore}</span>
+                <span class="${isCompleted && m.homeScore > m.awayScore ? 'text-emerald-400' : ''}">${m.homeScore}</span><span class="text-slate-500">-</span><span class="${isCompleted && m.awayScore > m.homeScore ? 'text-emerald-400' : ''}">${m.awayScore}</span>
               </div>
-              <span class="text-[9px] uppercase font-bold text-slate-400 mt-1">${m.isLive ? 'IN-PLAY' : 'FINAL'}</span>
+              <span class="text-[9px] uppercase font-bold text-slate-400 mt-1">${m.isLive ? 'IN-PLAY' : 'FULL TIME'}</span>
             ` : `
               <span class="text-xs font-mono font-bold text-slate-500 uppercase">VS</span>
               <div class="mt-1 flex items-center justify-center">
@@ -935,12 +1060,12 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
 
-        <!-- Analytical Predictions Breakdown Grid -->
-        <div class="mt-4 pt-3 border-t border-white/5 space-y-2.5">
-          <!-- Main Prediction Highlight Box -->
+        <!-- Analytical Predictions Breakdown -->
+        <div class="mt-3 pt-3 border-t border-white/5 space-y-2.5">
+          <!-- Main Prediction Tip Box -->
           <div class="p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 via-slate-900/60 to-slate-900/40 border border-emerald-500/30 flex items-center justify-between">
             <div>
-              <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-400">Primary Prediction Tip</span>
+              <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-400">Pre-Match Tip</span>
               <div class="text-base font-extrabold text-white flex items-center gap-2 mt-0.5">
                 <span>${m.prediction.primary}</span>
                 <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">${m.prediction.probability} Win Prob</span>
@@ -955,26 +1080,28 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
 
-          <!-- Secondary Markets: Correct Score, Average Goals, BTTS -->
-          <div class="grid grid-cols-3 gap-2 text-center text-xs">
-            <div class="p-2 rounded-lg bg-slate-900/60 border border-slate-800">
-              <span class="text-[10px] text-slate-400 block font-medium">Correct Score</span>
-              <span class="font-mono font-bold text-emerald-400 text-sm mt-0.5 block">${m.prediction.correctScore}</span>
+          <!-- Comparative verification matrix if completed, otherwise standard secondary markets -->
+          ${comparativeMarketsHTML ? comparativeMarketsHTML : `
+            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+              <div class="p-2 rounded-lg bg-slate-900/60 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block font-medium">Correct Score</span>
+                <span class="font-mono font-bold text-emerald-400 text-sm mt-0.5 block">${m.prediction.correctScore}</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-900/60 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block font-medium">Goals Market</span>
+                <span class="font-mono font-semibold text-white text-xs mt-0.5 block truncate">${m.prediction.averageGoals}</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-900/60 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block font-medium">Both To Score</span>
+                <span class="font-mono font-bold text-sky-400 text-xs mt-0.5 block">${m.prediction.btts}</span>
+              </div>
             </div>
-            <div class="p-2 rounded-lg bg-slate-900/60 border border-slate-800">
-              <span class="text-[10px] text-slate-400 block font-medium">Goals Market</span>
-              <span class="font-mono font-semibold text-white text-xs mt-0.5 block truncate">${m.prediction.averageGoals}</span>
-            </div>
-            <div class="p-2 rounded-lg bg-slate-900/60 border border-slate-800">
-              <span class="text-[10px] text-slate-400 block font-medium">Both To Score</span>
-              <span class="font-mono font-bold text-sky-400 text-xs mt-0.5 block">${m.prediction.btts}</span>
-            </div>
-          </div>
+          `}
 
-          <!-- Analytical Reasoning Snippet -->
+          <!-- Analytical Reasoning or Post-Match Analysis -->
           <div class="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 text-xs text-slate-300 flex items-start gap-2">
-            <span class="text-emerald-400 text-sm flex-shrink-0">💡</span>
-            <p class="leading-relaxed text-[11px]"><strong class="text-white">Football Analysis:</strong> ${m.prediction.reasoning}</p>
+            <span class="text-emerald-400 text-sm flex-shrink-0">${isCompleted ? '📊' : '💡'}</span>
+            <p class="leading-relaxed text-[11px]"><strong class="text-white">${isCompleted ? 'Post-Match Analysis & Audit:' : 'Football Analysis:'}</strong> ${isCompleted && m.evaluation ? m.evaluation.postMatchAnalysis : m.prediction.reasoning}</p>
           </div>
         </div>
 
@@ -985,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data-match-detail-id="${m.id}" 
             class="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold transition"
           >
-            <span>📊 Detailed H2H & Standings</span>
+            <span>📊 Detailed H2H & Verification</span>
             <span>→</span>
           </button>
           <div class="flex items-center gap-2">
@@ -993,7 +1120,7 @@ document.addEventListener('DOMContentLoaded', () => {
               type="button"
               data-share-tip-id="${m.id}" 
               class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
-              title="Share Prediction Tip"
+              title="Share Prediction & Result"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
             </button>
@@ -1003,7 +1130,137 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
-  // 10. Live Scores & Ticker Simulation
+  // 10. Results Archive & Client Referral Proof Section
+  function setupArchiveView() {
+    // 1. Referral slip copy button
+    if (els.btnCopyReferralSlip) {
+      els.btnCopyReferralSlip.addEventListener('click', () => {
+        if (!window.PredictionArchiveService) return;
+        const slip = window.PredictionArchiveService.generateClientReferralSlip();
+        const originalText = els.btnCopyReferralSlip.innerHTML;
+
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(slip).then(() => {
+            els.btnCopyReferralSlip.innerHTML = `<span>✓</span> <span>Copied Slip to Clipboard!</span>`;
+            setTimeout(() => {
+              els.btnCopyReferralSlip.innerHTML = originalText;
+            }, 2500);
+          }).catch(() => {
+            prompt('Copy this verified client referral slip:', slip);
+          });
+        } else {
+          prompt('Copy this verified client referral slip:', slip);
+        }
+      });
+    }
+
+    // 2. WhatsApp share link
+    if (els.btnShareWhatsappProof && window.PredictionArchiveService) {
+      const slip = window.PredictionArchiveService.generateClientReferralSlip();
+      els.btnShareWhatsappProof.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(slip)}`;
+    }
+
+    // 3. Email share link
+    if (els.btnEmailProof && window.PredictionArchiveService) {
+      const slip = window.PredictionArchiveService.generateClientReferralSlip();
+      els.btnEmailProof.href = `mailto:?subject=${encodeURIComponent('SirLee Game Prediction - Verified Proof Slip')}&body=${encodeURIComponent(slip)}`;
+    }
+
+    // 4. Archive outcome filter pills (All, Won, Missed, Banker, Exact)
+    if (els.archiveOutcomePills) {
+      els.archiveOutcomePills.querySelectorAll('[data-archive-outcome]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const outcome = btn.getAttribute('data-archive-outcome');
+          state.archiveFilterOutcome = outcome;
+
+          // Toggle button styles
+          els.archiveOutcomePills.querySelectorAll('[data-archive-outcome]').forEach(b => {
+            b.classList.remove('bg-emerald-500', 'text-slate-950');
+            b.classList.add('text-slate-400');
+          });
+          btn.classList.add('bg-emerald-500', 'text-slate-950');
+          btn.classList.remove('text-slate-400');
+
+          renderArchiveView();
+        });
+      });
+    }
+
+    // 5. Archive search input
+    if (els.archiveSearchInput) {
+      els.archiveSearchInput.addEventListener('input', (e) => {
+        state.archiveSearchQuery = e.target.value.trim().toLowerCase();
+        renderArchiveView();
+      });
+    }
+
+    updateArchiveKPIs();
+  }
+
+  function updateArchiveKPIs() {
+    if (!window.PredictionArchiveService) return;
+    const stats = window.PredictionArchiveService.getArchiveStats();
+
+    if (els.archiveStatWinrate) els.archiveStatWinrate.textContent = stats.winRate;
+    if (els.archiveStatBankerrate) els.archiveStatBankerrate.textContent = stats.bankerWinRate;
+    if (els.archiveStatTotal) els.archiveStatTotal.textContent = `${stats.total} Games`;
+    if (els.archiveStatExact) els.archiveStatExact.textContent = `${stats.exactHits} Hits`;
+    if (els.archiveCountBadge) els.archiveCountBadge.textContent = `${stats.winRate} Hit`;
+
+    // Refresh WhatsApp & Email share URLs
+    const slip = window.PredictionArchiveService.generateClientReferralSlip();
+    if (els.btnShareWhatsappProof) {
+      els.btnShareWhatsappProof.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(slip)}`;
+    }
+    if (els.btnEmailProof) {
+      els.btnEmailProof.href = `mailto:?subject=${encodeURIComponent('SirLee Game Prediction - Verified Proof Slip')}&body=${encodeURIComponent(slip)}`;
+    }
+  }
+
+  function renderArchiveView() {
+    if (!els.archiveMatchesList || !window.PredictionArchiveService) return;
+
+    updateArchiveKPIs();
+
+    const matches = window.PredictionArchiveService.getArchivedMatches({
+      outcome: state.archiveFilterOutcome,
+      search: state.archiveSearchQuery
+    });
+    state.archivedMatches = matches;
+
+    if (els.archiveFilterCountBadge) {
+      els.archiveFilterCountBadge.textContent = `Showing ${matches.length} Verified Games`;
+    }
+
+    if (matches.length === 0) {
+      els.archiveMatchesList.innerHTML = `
+        <div class="col-span-1 md:col-span-2 text-center py-12 px-4 rounded-2xl bg-slate-900/40 border border-slate-800 text-slate-400">
+          <div class="text-3xl mb-2">🔍</div>
+          <h4 class="text-white font-bold text-base mb-1">No archived games match your filter</h4>
+          <p class="text-xs text-slate-400 max-w-sm mx-auto mb-3">Try resetting your filter to "All Results".</p>
+        </div>
+      `;
+      return;
+    }
+
+    els.archiveMatchesList.innerHTML = matches.map(m => createMatchCardHTML(m)).join('');
+
+    els.archiveMatchesList.querySelectorAll('[data-match-detail-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const matchId = btn.getAttribute('data-match-detail-id');
+        openMatchDetailModal(matchId);
+      });
+    });
+
+    els.archiveMatchesList.querySelectorAll('[data-share-tip-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const matchId = btn.getAttribute('data-share-tip-id');
+        sharePredictionTip(matchId);
+      });
+    });
+  }
+
+  // 11. Live Scores & Ticker Simulation
   function renderLiveMatches(liveMatches) {
     if (!els.liveContainer) return;
 
@@ -1090,7 +1347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 15000);
   }
 
-  // 11. Standings View Integration
+  // 12. Standings View Integration
   function setupStandingsView() {
     if (!els.standingsLeagueSelect || !els.standingsTableBody) return;
 
@@ -1266,16 +1523,21 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, '&#039;');
   }
 
-  // 12. Match Detail Modal
+  // 13. Match Detail Modal (With Full Verification Breakdown for Finished Matches)
   function openMatchDetailModal(matchId) {
     const allMatches = [
       ...(state.currentMatches || []),
+      ...(state.archivedMatches || []),
+      ...(window.PredictionArchiveService ? window.PredictionArchiveService.getArchivedMatches() : []),
       ...(window._ACTIVE_DAY_CACHE || []),
-      ...(window._TODAY_CACHE || (typeof TODAY_MATCHES !== 'undefined' ? TODAY_MATCHES : [])),
-      ...(window._TOMORROW_CACHE || (typeof TOMORROW_MATCHES !== 'undefined' ? TOMORROW_MATCHES : []))
+      ...(window._TODAY_CACHE || []),
+      ...(window._TOMORROW_CACHE || [])
     ];
     const match = allMatches.find(m => m.id === matchId);
     if (!match || !els.matchModalContent || !els.matchModal) return;
+
+    const isCompleted = match.isCompleted || match.status === 'FT';
+    const evalObj = match.evaluation;
 
     els.matchModalContent.innerHTML = `
       <div class="p-6">
@@ -1286,6 +1548,19 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <button id="modal-inner-close" class="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white">✕</button>
         </div>
+
+        <!-- Result Banner inside Modal if completed -->
+        ${isCompleted ? `
+          <div class="mt-4 p-3 rounded-xl ${evalObj && evalObj.isExactScore ? 'bg-amber-950/40 border border-amber-500/40 text-amber-300' : (evalObj && evalObj.primaryWon ? 'bg-emerald-950/40 border border-emerald-500/40 text-emerald-300' : 'bg-red-950/40 border border-red-500/30 text-red-300')} flex items-center justify-between text-xs">
+            <span class="font-bold flex items-center gap-1.5">
+              <span>${evalObj && evalObj.isExactScore ? '🎯' : (evalObj && evalObj.primaryWon ? '✅' : '❌')}</span>
+              <span>Official Full-Time Score: ${match.homeScore} - ${match.awayScore}</span>
+            </span>
+            <span class="font-mono font-bold uppercase text-[10px] px-2 py-0.5 rounded ${evalObj && evalObj.primaryWon ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}">
+              ${evalObj && evalObj.primaryWon ? 'PREDICTION WON' : 'PREDICTION MISSED'}
+            </span>
+          </div>
+        ` : ''}
 
         <div class="py-4 grid grid-cols-2 gap-4 items-center border-b border-slate-800">
           <div class="flex items-center gap-3">
@@ -1305,7 +1580,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <div class="mt-4 p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30">
-          <span class="text-[10px] uppercase font-bold text-emerald-400">Mathematical Prediction</span>
+          <span class="text-[10px] uppercase font-bold text-emerald-400">${isCompleted ? 'Audited Pre-Match Forecast' : 'Mathematical Prediction'}</span>
           <div class="text-lg font-black text-white mt-1">${match.prediction.primary}</div>
           <div class="flex items-center gap-3 mt-2 text-xs">
             <span class="text-emerald-300 font-bold">${match.prediction.probability} Probability</span>
@@ -1318,7 +1593,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div class="mt-4 space-y-2 text-xs text-slate-300">
           <div class="p-3 rounded-lg bg-slate-900 border border-slate-800">
-            <strong class="text-white">Analysis & Intelligence:</strong> ${match.prediction.reasoning}
+            <strong class="text-white">${isCompleted ? 'Post-Match Analysis & Verification:' : 'Analysis & Intelligence:'}</strong> 
+            ${isCompleted && evalObj ? evalObj.postMatchAnalysis : match.prediction.reasoning}
           </div>
           <div class="grid grid-cols-2 gap-2 text-center">
             <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
@@ -1370,13 +1646,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function sharePredictionTip(matchId) {
-    const allMatches = state.currentMatches || [];
+    const allMatches = [
+      ...(state.currentMatches || []),
+      ...(state.archivedMatches || []),
+      ...(window.PredictionArchiveService ? window.PredictionArchiveService.getArchivedMatches() : [])
+    ];
     const match = allMatches.find(m => m.id === matchId);
     if (!match) return;
 
+    const isCompleted = match.isCompleted || match.status === 'FT';
+    let resultNote = '';
+    if (isCompleted) {
+      resultNote = `\nOfficial Result: ${match.homeScore}-${match.awayScore} (${match.resultStatus === 'WON' ? 'WON ✅' : 'MISSED ❌'})`;
+    }
+
     const shareData = {
       title: `${match.homeTeam.name} vs ${match.awayTeam.name} - Prediction`,
-      text: `⚽ Football Prediction: ${match.homeTeam.name} vs ${match.awayTeam.name}\nTip: ${match.prediction.primary} (${match.prediction.probability})\nCorrect Score: ${match.prediction.correctScore}\nSource: sirleegameprediction`,
+      text: `⚽ Football Prediction: ${match.homeTeam.name} vs ${match.awayTeam.name}\nTip: ${match.prediction.primary} (${match.prediction.probability})\nPredicted Score: ${match.prediction.correctScore}${resultNote}\nVerified Source: sirleegameprediction`,
       url: window.location.href
     };
 
@@ -1384,14 +1670,14 @@ document.addEventListener('DOMContentLoaded', () => {
       navigator.share(shareData).catch(() => {});
     } else {
       navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`).then(() => {
-        alert('Prediction tip copied to clipboard!');
+        alert('Prediction & verified score copied to clipboard!');
       }).catch(() => {
         alert('Tip: ' + shareData.text);
       });
     }
   }
 
-  // 13. Contact & VIP Form Setup
+  // 14. Contact & VIP Form Setup
   function setupContactForm() {
     if (!els.contactForm) return;
 
@@ -1414,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       try {
-        const res = await window.ContactFormService.submitInquiry(formData);
+        await window.ContactFormService.submitInquiry(formData);
         if (els.ticketRefSpan) {
           els.ticketRefSpan.textContent = 'SIRLEE-' + Math.floor(100000 + Math.random() * 900000);
         }
@@ -1444,7 +1730,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 14. Network Offline Status
+  // 15. Network Offline Status
   function setupNetworkListeners() {
     const updateOnlineStatus = () => {
       state.isOnline = navigator.onLine;

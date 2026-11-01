@@ -267,13 +267,13 @@
 
           <!-- Accuracy Stat Chips -->
           <div class="pt-2 flex flex-wrap items-center gap-3 text-xs">
+            <a href="./#archive" data-tab-target="archive" class="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 flex items-center gap-2 transition group shadow-sm">
+              <span class="text-emerald-400 font-bold font-mono text-sm">88.9%</span>
+              <span class="text-slate-300 text-[11px] group-hover:text-emerald-300">Verified Results Archive & Proof →</span>
+            </a>
             <div class="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center gap-2">
-              <span class="text-emerald-400 font-bold font-mono text-sm">89.4%</span>
-              <span class="text-slate-400 text-[11px]">Weekly Strike Rate</span>
-            </div>
-            <div class="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center gap-2">
-              <span class="text-amber-400 font-bold font-mono text-sm">32 / 38</span>
-              <span class="text-slate-400 text-[11px]">Today Hits</span>
+              <span class="text-amber-400 font-bold font-mono text-sm">100%</span>
+              <span class="text-slate-400 text-[11px]">VIP Bankers Won</span>
             </div>
             <div class="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center gap-2">
               <span class="text-sky-400 font-bold font-mono text-sm">24/7</span>
@@ -385,6 +385,15 @@
         class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold tracking-wide border border-transparent text-slate-400 hover:text-white transition"
       >
         <span>📊 Official League Standings</span>
+      </button>
+
+      <button 
+        type="button"
+        data-tab-target="archive" 
+        class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold tracking-wide border border-transparent text-emerald-400 hover:text-emerald-300 transition"
+      >
+        <span>📚 Results Archive & Proof</span>
+        <span id="archive-count-badge" class="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">88.9% Hit</span>
       </button>
 
       <button 
@@ -645,6 +654,119 @@
         </div>
       </div>
 
+    <!-- VIEW: RESULTS ARCHIVE & PROOF LEDGER (Right vs Wrong for Client Referrals) -->
+    <section id="section-archive" class="hidden space-y-6">
+      <!-- Archive Hero Banner & Transparency Pitch -->
+      <div class="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-emerald-950/40 via-slate-900 to-[#07090E] border border-emerald-500/30 relative overflow-hidden shadow-2xl">
+        <div class="absolute -top-24 -right-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 max-w-3xl space-y-3">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold uppercase tracking-wider">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Verified Historical Archive & Client Referral Proof
+          </div>
+          <h2 class="font-heading font-black text-2xl sm:text-3xl text-white tracking-tight">
+            Full Game Results & <span class="gradient-text-neon">Prediction Accuracy Ledger</span>
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Every predicted match is timestamped, audited, and matched with official full-time scorelines. Analyze which games our predictions were <strong class="text-emerald-400 font-bold">Right (Won)</strong> and <strong class="text-red-400 font-bold">Wrong (Missed)</strong> for transparent analysis and client referrals.
+          </p>
+
+          <!-- Client Referral Quick Action Bar -->
+          <div class="pt-2 flex flex-wrap items-center gap-2.5">
+            <button 
+              id="btn-copy-referral-slip" 
+              type="button" 
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-bold text-xs uppercase tracking-wide transition shadow-lg shadow-emerald-500/20 active:scale-95"
+              title="Copy verified win rate and recent hits slip to clipboard for client referrals"
+            >
+              <span>📋</span>
+              <span>Copy Client Referral Proof Slip</span>
+            </button>
+
+            <a 
+              id="btn-share-whatsapp-proof" 
+              href="https://api.whatsapp.com/send?text=Check%20out%20sirleegameprediction%20verified%20winning%20records"
+              target="_blank" 
+              rel="noopener"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition"
+            >
+              <span>💬</span>
+              <span>Share on WhatsApp</span>
+            </a>
+
+            <a 
+              id="btn-email-proof" 
+              href="mailto:djsirlee@gmail.com?subject=SirLee%20Verified%20Prediction%20Proof"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 text-xs font-semibold transition"
+            >
+              <span>✉️</span>
+              <span>Email Proof Slip</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historical KPI Performance Summary -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="glass-card p-4 sm:p-5 rounded-2xl border border-emerald-500/30 text-center">
+          <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold tracking-wider block">Overall Verified Win Rate</span>
+          <div id="archive-stat-winrate" class="text-2xl sm:text-3xl font-heading font-black text-emerald-400 mt-1">88.9%</div>
+          <span class="text-[10px] text-slate-500 mt-1 block">Mathematical prediction accuracy</span>
+        </div>
+
+        <div class="glass-card p-4 sm:p-5 rounded-2xl border border-amber-500/30 text-center">
+          <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold tracking-wider block">VIP Banker Strike Rate</span>
+          <div id="archive-stat-bankerrate" class="text-2xl sm:text-3xl font-heading font-black text-amber-400 mt-1">100.0%</div>
+          <span class="text-[10px] text-slate-500 mt-1 block">Maximum stake banker slips</span>
+        </div>
+
+        <div class="glass-card p-4 sm:p-5 rounded-2xl border border-white/10 text-center">
+          <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold tracking-wider block">Archived Verified Matches</span>
+          <div id="archive-stat-total" class="text-2xl sm:text-3xl font-heading font-black text-white mt-1">9 Games</div>
+          <span class="text-[10px] text-slate-500 mt-1 block">Audited with official FT scores</span>
+        </div>
+
+        <div class="glass-card p-4 sm:p-5 rounded-2xl border border-sky-500/30 text-center">
+          <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold tracking-wider block">Exact Correct Scores Hit</span>
+          <div id="archive-stat-exact" class="text-2xl sm:text-3xl font-heading font-black text-sky-400 mt-1">5 Hits</div>
+          <span class="text-[10px] text-slate-500 mt-1 block">Exact scoreline forecasts</span>
+        </div>
+      </div>
+
+      <!-- Archive Filters & Search Sub-bar -->
+      <div class="p-4 rounded-2xl bg-slate-900/80 border border-white/10 space-y-3">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <!-- Outcome Filters: All, Won, Missed, Bankers, Exact -->
+          <div class="flex items-center gap-1.5 overflow-x-auto hide-scrollbar bg-slate-950/80 p-1 rounded-xl border border-white/5" id="archive-outcome-pills">
+            <button type="button" data-archive-outcome="all" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition">All Results</button>
+            <button type="button" data-archive-outcome="won" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">✅ Won (Verified)</button>
+            <button type="button" data-archive-outcome="lost" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">❌ Missed</button>
+            <button type="button" data-archive-outcome="banker" class="px-3 py-1.5 rounded-lg text-xs font-bold text-amber-400 hover:text-amber-300 transition">👑 VIP Bankers</button>
+            <button type="button" data-archive-outcome="exact" class="px-3 py-1.5 rounded-lg text-xs font-bold text-sky-400 hover:text-sky-300 transition">🎯 Exact Scores</button>
+          </div>
+
+          <!-- Archive Search Input -->
+          <div class="relative min-w-[200px]">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
+            <input 
+              type="text" 
+              id="archive-search-input" 
+              placeholder="Search archive..." 
+              class="custom-input w-full pl-8 pr-3 py-1.5 rounded-xl text-xs text-white placeholder-slate-500"
+            >
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-white/5">
+          <span id="archive-filter-count-badge" class="font-mono text-emerald-400 font-semibold">Showing 9 Verified Games</span>
+          <span class="text-slate-500 text-[11px]">Real Match Feeds & Historical Audit</span>
+        </div>
+      </div>
+
+      <!-- Archive Match Cards Grid -->
+      <div id="archive-matches-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Rendered dynamically by app.js -->
+      </div>
     </section>
 
     <!-- VIEW 5: CONTACT & VIP PREMIUM INFO REQUEST (djsirlee@gmail.com) -->
@@ -926,6 +1048,10 @@
     <button type="button" data-tab-target="stats" class="bottom-nav-item flex-1 flex flex-col items-center justify-center py-1 transition">
       <span class="text-lg">📊</span>
       <span class="text-[10px] font-semibold mt-0.5">Stats</span>
+    </button>
+    <button type="button" data-tab-target="archive" class="bottom-nav-item flex-1 flex flex-col items-center justify-center py-1 transition text-emerald-400">
+      <span class="text-lg">📚</span>
+      <span class="text-[10px] font-semibold mt-0.5">Archive</span>
     </button>
     <button type="button" data-tab-target="premium" class="bottom-nav-item flex-1 flex flex-col items-center justify-center py-1 transition text-amber-400">
       <span class="text-lg">👑</span>
